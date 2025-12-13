@@ -1,0 +1,26 @@
+{
+  "name": "@uni-track/api",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "type": "module",
+  "scripts": {},
+  "devDependencies": {
+    "typescript": "catalog:",
+    "@uni-track/config": "workspace:*"
+  },
+  "dependencies": {
+    "@trpc/server": "catalog:",
+    "@trpc/client": "catalog:",
+    "next": "catalog:",
+    "dotenv": "catalog:",
+    "zod": "catalog:",
+    "@uni-track/auth": "workspace:*",
+    "@uni-track/db": "workspace:*"
+  }
+}

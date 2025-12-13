@@ -1,46 +1,27 @@
 "use client";
-import { useQuery } from "@tanstack/react-query";
-import { trpc } from "@/utils/trpc";
 
-const TITLE_TEXT = `
- ██████╗ ███████╗████████╗████████╗███████╗██████╗
- ██╔══██╗██╔════╝╚══██╔══╝╚══██╔══╝██╔════╝██╔══██╗
- ██████╔╝█████╗     ██║      ██║   █████╗  ██████╔╝
- ██╔══██╗██╔══╝     ██║      ██║   ██╔══╝  ██╔══██╗
- ██████╔╝███████╗   ██║      ██║   ███████╗██║  ██║
- ╚═════╝ ╚══════╝   ╚═╝      ╚═╝   ╚══════╝╚═╝  ╚═╝
-
- ████████╗    ███████╗████████╗ █████╗  ██████╗██╗  ██╗
- ╚══██╔══╝    ██╔════╝╚══██╔══╝██╔══██╗██╔════╝██║ ██╔╝
-    ██║       ███████╗   ██║   ███████║██║     █████╔╝
-    ██║       ╚════██║   ██║   ██╔══██║██║     ██╔═██╗
-    ██║       ███████║   ██║   ██║  ██║╚██████╗██║  ██╗
-    ╚═╝       ╚══════╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝
- `;
+import { Navbar } from "@/components/landing/navbar";
+import { HeroSection } from "@/components/landing/hero";
+import { ProblemSection } from "@/components/landing/problem";
+import { SolutionSection } from "@/components/landing/solution";
+import { CoreFeatures } from "@/components/landing/core-features";
+import { HowItWorksSection } from "@/components/landing/how-it-works";
+import { BuiltForAcademia } from "@/components/landing/built-for-academia";
+import { CTASection } from "@/components/landing/cta";
+import { FooterSection } from "@/components/landing/footer";
 
 export default function Home() {
-	const healthCheck = useQuery(trpc.healthCheck.queryOptions());
-
 	return (
-		<div className="container mx-auto max-w-3xl px-4 py-2">
-			<pre className="overflow-x-auto font-mono text-sm">{TITLE_TEXT}</pre>
-			<div className="grid gap-6">
-				<section className="rounded-lg border p-4">
-					<h2 className="mb-2 font-medium">API Status</h2>
-					<div className="flex items-center gap-2">
-						<div
-							className={`h-2 w-2 rounded-full ${healthCheck.data ? "bg-green-500" : "bg-red-500"}`}
-						/>
-						<span className="text-sm text-muted-foreground">
-							{healthCheck.isLoading
-								? "Checking..."
-								: healthCheck.data
-									? "Connected"
-									: "Disconnected"}
-						</span>
-					</div>
-				</section>
-			</div>
-		</div>
+		<main className="min-h-screen bg-background font-sans text-foreground selection:bg-primary/10">
+			<Navbar />
+			<HeroSection />
+			<ProblemSection />
+			<SolutionSection />
+			<CoreFeatures />
+			<HowItWorksSection />
+			<BuiltForAcademia />
+			<CTASection />
+			<FooterSection />
+		</main>
 	);
 }

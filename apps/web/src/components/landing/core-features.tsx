@@ -16,14 +16,14 @@ export function CoreFeatures() {
                     {/* Large Card: Dashboard */}
                     <motion.div
                         whileHover={{ y: -5 }}
-                        className="md:col-span-2 min-h-[300px] rounded-2xl border bg-accent/30 p-8 shadow-sm relative overflow-hidden group"
+                        className="md:col-span-2 min-h-[300px] rounded-2xl border bg-accent/30 p-8 shadow-sm relative overflow-hidden group flex flex-col"
                     >
                         <div className="z-10 relative">
                             <h3 className="text-2xl font-bold mb-2">Course Dashboard</h3>
                             <p className="text-muted-foreground">The command center for your degree. Lectures, files, and links.</p>
                         </div>
                         {/* Visual */}
-                        <div className="absolute top-24 right-0 w-[90%] h-full bg-card rounded-tl-2xl border shadow-lg p-4 transition-transform group-hover:-translate-y-2 group-hover:-translate-x-2">
+                        <div className="relative mt-8 flex-1 w-[105%] ml-[5%] bg-card rounded-tl-2xl border shadow-lg p-4 transition-transform group-hover:-translate-y-2 group-hover:-translate-x-2">
                             <div className="flex gap-4 border-b border-border pb-2 mb-4">
                                 <div className="h-2 w-20 bg-muted rounded"></div>
                                 <div className="h-2 w-20 bg-muted rounded"></div>
@@ -39,7 +39,7 @@ export function CoreFeatures() {
                     {/* Small Card: Deadlines */}
                     <motion.div
                         whileHover={{ y: -5 }}
-                        className="md:col-span-1 min-h-[300px] rounded-2xl border bg-accent/30 p-8 shadow-sm relative overflow-hidden group"
+                        className="md:col-span-1 min-h-[300px] rounded-2xl border bg-accent/30 p-8 shadow-sm relative overflow-hidden group flex flex-col"
                     >
                         <div className="z-10 relative">
                             <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center mb-4">
@@ -48,13 +48,25 @@ export function CoreFeatures() {
                             <h3 className="text-xl font-bold mb-2">Smart Deadlines</h3>
                             <p className="text-muted-foreground text-sm">Countdown to submission.</p>
                         </div>
-                        <div className="absolute bottom-6 right-6 left-6 bg-card p-4 rounded-xl border border-border shadow-sm group-hover:scale-105 transition-transform">
-                            <div className="flex justify-between items-center mb-2">
-                                <span className="text-xs font-bold">Physics Lab</span>
-                                <span className="text-xs text-red-500">2h left</span>
+                        <div className="mt-auto pt-6 space-y-3">
+                            <div className="bg-card p-4 rounded-xl border border-border shadow-sm group-hover:scale-105 transition-transform">
+                                <div className="flex justify-between items-center mb-2">
+                                    <span className="text-xs font-bold">Data Structures</span>
+                                    <span className="text-xs text-blue-500">1d left</span>
+                                </div>
+                                <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                                    <div className="h-full bg-blue-500 w-[50%]"></div>
+                                </div>
                             </div>
-                            <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                                <div className="h-full bg-red-500 w-[85%]"></div>
+
+                            <div className="bg-card p-4 rounded-xl border border-border shadow-sm group-hover:scale-105 transition-transform">
+                                <div className="flex justify-between items-center mb-2">
+                                    <span className="text-xs font-bold">Physics Lab</span>
+                                    <span className="text-xs text-red-500">2h left</span>
+                                </div>
+                                <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                                    <div className="h-full bg-red-500 w-[85%]"></div>
+                                </div>
                             </div>
                         </div>
                     </motion.div>
@@ -62,7 +74,7 @@ export function CoreFeatures() {
                     {/* Small Card: Announcements */}
                     <motion.div
                         whileHover={{ y: -5 }}
-                        className="md:col-span-1 min-h-[300px] rounded-2xl border bg-accent/30 p-8 shadow-sm relative overflow-hidden group"
+                        className="md:col-span-1 min-h-[300px] rounded-2xl border bg-accent/30 p-8 shadow-sm relative overflow-hidden group flex flex-col"
                     >
                         <div className="z-10 relative">
                             <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-4">
@@ -71,7 +83,7 @@ export function CoreFeatures() {
                             <h3 className="text-xl font-bold mb-2">Announcements</h3>
                             <p className="text-muted-foreground text-sm">Never miss a cancellation.</p>
                         </div>
-                        <div className="absolute top-32 left-6 right-6 space-y-3">
+                        <div className="mt-8 space-y-3 relative">
                             <div className="bg-card p-3 rounded-lg border border-border shadow-sm text-xs group-hover:translate-x-2 transition-transform duration-300">
                                 <p className="font-semibold text-primary mb-1">Dr. Smith</p>
                                 <p className="text-muted-foreground">Class is rescheduled to...</p>
@@ -86,18 +98,18 @@ export function CoreFeatures() {
                     {/* Large Card: Timetable */}
                     <motion.div
                         whileHover={{ y: -5 }}
-                        className="md:col-span-2 min-h-[300px] rounded-2xl border bg-accent/30 p-8 shadow-sm relative overflow-hidden group"
+                        className="md:col-span-2 min-h-[300px] rounded-2xl border bg-accent/30 p-8 shadow-sm relative overflow-hidden group flex flex-col"
                     >
                         <div className="z-10 relative">
                             <h3 className="text-2xl font-bold mb-2">Timetable & History</h3>
                             <p className="text-muted-foreground">Weekly logical view of your time.</p>
                         </div>
-                        <div className="absolute top-24 left-0 w-[90%] h-full bg-card rounded-tr-2xl border shadow-lg p-4 transition-transform group-hover:-translate-y-2 group-hover:translate-x-2">
-                            <div className="grid grid-cols-5 gap-2 h-full">
+                        <div className="relative mt-8 flex-1 w-[105%] bg-card rounded-tr-2xl border shadow-lg p-4 transition-transform group-hover:-translate-y-2 group-hover:translate-x-2">
+                            <div className="grid grid-cols-5 gap-2 h-full min-h-[160px]">
                                 {[...Array(5)].map((_, i) => (
                                     <div key={i} className="flex flex-col gap-2">
                                         <div className="h-4 w-full bg-muted rounded"></div>
-                                        <div className="flex-1 bg-muted/20 rounded relative">
+                                        <div className="flex-1 bg-muted/20 rounded relative min-h-[100px]">
                                             {i === 1 && <div className="absolute top-4 left-0 right-0 h-16 bg-blue-100 dark:bg-blue-900/20 m-1 rounded border-l-2 border-blue-500"></div>}
                                             {i === 3 && <div className="absolute top-12 left-0 right-0 h-20 bg-green-100 dark:bg-green-900/20 m-1 rounded border-l-2 border-green-500"></div>}
                                         </div>

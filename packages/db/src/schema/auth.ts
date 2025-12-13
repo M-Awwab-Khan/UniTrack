@@ -1,5 +1,7 @@
 import { relations } from "drizzle-orm";
-import { pgTable, text, timestamp, boolean, index } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, index, pgEnum } from "drizzle-orm/pg-core";
+
+export const roleEnum = pgEnum("role", ["student", "ta", "teacher", "admin"]);
 
 export const user = pgTable("user", {
 	id: text("id").primaryKey(),
@@ -7,6 +9,7 @@ export const user = pgTable("user", {
 	email: text("email").notNull().unique(),
 	emailVerified: boolean("email_verified").default(false).notNull(),
 	image: text("image"),
+	role: roleEnum("role").default("student").notNull(),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at")
 		.defaultNow()
@@ -73,9 +76,55 @@ export const verification = pgTable(
 	(table) => [index("verification_identifier_idx").on(table.identifier)],
 );
 
-export const userRelations = relations(user, ({ many }) => ({
+// Profiles
+
+export const studentProfile = pgTable("student_profile", {
+	id: text("id").primaryKey(),
+	userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+	rollNumber: text("roll_number").notNull(),
+	department: text("department").notNull(),
+	semester: text("semester").notNull(),
+	batch: text("batch").notNull(),
+});
+
+export const taProfile = pgTable("ta_profile", {
+	id: text("id").primaryKey(),
+	userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+	department: text("department").notNull(),
+});
+
+export const teacherProfile = pgTable("teacher_profile", {
+	id: text("id").primaryKey(),
+	userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+	department: text("department").notNull(),
+});
+
+export const adminProfile = pgTable("admin_profile", {
+	id: text("id").primaryKey(),
+	userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+});
+
+// Relations
+
+export const userRelations = relations(user, ({ many, one }) => ({
 	sessions: many(session),
 	accounts: many(account),
+	studentProfile: one(studentProfile, {
+		fields: [user.id],
+		references: [studentProfile.userId],
+	}),
+	taProfile: one(taProfile, {
+		fields: [user.id],
+		references: [taProfile.userId],
+	}),
+	teacherProfile: one(teacherProfile, {
+		fields: [user.id],
+		references: [teacherProfile.userId],
+	}),
+	adminProfile: one(adminProfile, {
+		fields: [user.id],
+		references: [adminProfile.userId],
+	}),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -88,6 +137,34 @@ export const sessionRelations = relations(session, ({ one }) => ({
 export const accountRelations = relations(account, ({ one }) => ({
 	user: one(user, {
 		fields: [account.userId],
+		references: [user.id],
+	}),
+}));
+
+export const studentProfileRelations = relations(studentProfile, ({ one }) => ({
+	user: one(user, {
+		fields: [studentProfile.userId],
+		references: [user.id],
+	}),
+}));
+
+export const taProfileRelations = relations(taProfile, ({ one }) => ({
+	user: one(user, {
+		fields: [taProfile.userId],
+		references: [user.id],
+	}),
+}));
+
+export const teacherProfileRelations = relations(teacherProfile, ({ one }) => ({
+	user: one(user, {
+		fields: [teacherProfile.userId],
+		references: [user.id],
+	}),
+}));
+
+export const adminProfileRelations = relations(adminProfile, ({ one }) => ({
+	user: one(user, {
+		fields: [adminProfile.userId],
 		references: [user.id],
 	}),
 }));

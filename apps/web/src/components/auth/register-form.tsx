@@ -40,11 +40,26 @@ import { authClient } from "@/lib/auth-client";
 
 type RoleType = "student" | "ta" | "teacher" | "admin";
 
+import { useTRPC } from "@/utils/trpc";
+import { useMutation } from "@tanstack/react-query";
+
 export function RegisterForm() {
     const router = useRouter();
     const [step, setStep] = useState<1 | 2>(1);
     const [selectedRole, setSelectedRole] = useState<RoleType | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+
+    const trpc = useTRPC();
+    const createProfileMutation = useMutation(trpc.auth.createProfile.mutationOptions({
+        onSuccess: () => {
+            toast.success("Account created successfully!");
+            router.push("/dashboard");
+        },
+        onError: (error) => {
+            toast.error(error.message);
+        },
+    }));
+
 
     // Determine schema based on role
     const getSchema = () => {
@@ -105,18 +120,26 @@ export function RegisterForm() {
                 // If using custom fields, ensure better-auth is configured to receive them or use a separate API call to create profile
                 image: undefined, // optional
                 fetchOptions: {
-                    onResponse: () => {
-                        setIsLoading(false);
-                    },
-                    onSuccess: () => {
-                        // If successful, create profile? 
-                        // Better-auth might handle additional fields if mapped in schema
-                        // For now assuming basic auth works, typically we'd send profile data to an API
-                        toast.success("Account created successfully!");
-                        router.push("/dashboard");
-                    },
                     onError: (ctx) => {
                         toast.error(ctx.error.message);
+                        setIsLoading(false);
+                    },
+                    onSuccess: async () => {
+                        try {
+                            // Create profile after signup
+                            await createProfileMutation.mutateAsync({
+                                role: values.role,
+                                rollNumber: values.rollNumber,
+                                department: values.department,
+                                semester: values.semester,
+                                batch: values.batch,
+                            });
+                            // Success/error handling is in the mutation options above
+                        } catch (profileError) {
+                            console.error("Profile creation failed", profileError);
+                            // Error toast is in mutation onError
+                            router.push("/dashboard");
+                        }
                     }
                 }
             });

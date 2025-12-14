@@ -1,3 +1,4 @@
+export * from "./schema";
 import * as schema from "./schema";
 
 import { drizzle } from "drizzle-orm/node-postgres";

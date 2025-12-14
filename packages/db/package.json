@@ -1,9 +1,15 @@
 {
   "name": "@uni-track/db",
   "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
   "exports": {
     ".": {
+      "types": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./schema": {
+      "default": "./src/schema/index.ts"
     },
     "./*": {
       "default": "./src/*.ts"

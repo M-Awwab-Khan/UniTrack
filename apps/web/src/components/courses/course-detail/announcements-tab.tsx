@@ -19,11 +19,11 @@ export function AnnouncementsTab({ data }: AnnouncementsTabProps) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="space-y-4 max-w-3xl mx-auto"
+            className="space-y-4"
         >
             {data.announcements.map((announcement) => (
                 <Card key={announcement.id} className="overflow-hidden">
-                    <div className="p-6 space-y-4">
+                    <div className="px-4 space-y-2">
                         <div className="flex justify-between items-start gap-4">
                             <div className="flex items-center gap-3">
                                 <Avatar className="h-10 w-10 border">

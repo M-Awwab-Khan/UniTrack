@@ -8,7 +8,8 @@ import {
     Calendar,
     ChevronRight,
     AlertCircle,
-    CheckCircle2
+    CheckCircle2,
+    MessageCircleMore
 } from "lucide-react";
 import type { CourseDetail } from "@/components/courses/mock-course-details";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -81,8 +82,8 @@ export function OverviewTab({ data, setTab }: OverviewTabProps) {
 
             <div className="grid md:grid-cols-3 gap-6">
                 {/* Deadlines */}
-                <Card className="md:col-span-2">
-                    <CardHeader className="flex flex-row items-center justify-between py-4">
+                <Card className="md:col-span-2 gap-0 py-0">
+                    <CardHeader className="flex flex-row items-center justify-between pt-5 pb-2">
                         <CardTitle className="text-lg font-semibold flex items-center gap-2">
                             <Clock className="w-5 h-5" />
                             Upcoming Deadlines
@@ -121,9 +122,12 @@ export function OverviewTab({ data, setTab }: OverviewTabProps) {
                 </Card>
 
                 {/* Announcements Preview */}
-                <Card>
-                    <CardHeader className="py-4">
-                        <CardTitle className="text-lg font-semibold">Latest Updates</CardTitle>
+                <Card className="py-0 gap-0">
+                    <CardHeader className="pt-5 pb-0">
+                        <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                            <MessageCircleMore className="w-5 h-5" />
+                            Latest Updates
+                        </CardTitle>
                     </CardHeader>
                     <CardContent className="p-0">
                         <div className="divide-y">

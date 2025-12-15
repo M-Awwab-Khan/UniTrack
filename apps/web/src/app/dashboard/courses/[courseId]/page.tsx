@@ -34,7 +34,7 @@ export default function CourseDetailPage() {
     }
 
     return (
-        <div className="max-w-5xl mx-auto pb-10">
+        <div className="w-full max-w-5xl mx-auto pb-10">
             <CourseHeader course={displayCourse} />
 
             <TabsNav activeTab={activeTab} setActiveTab={setActiveTab} />

@@ -11,6 +11,19 @@ export function UpcomingDeadlines() {
     const trpc = useTRPC();
     const { data: deadlines, isLoading } = useQuery(trpc.dashboard.getUpcomingDeadlines.queryOptions());
 
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case "Due Today":
+                return "bg-orange-100 border-orange-200 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400";
+            case "Upcoming":
+                return "bg-blue-100 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400";
+            case "Overdue":
+                return "bg-red-100 border-red-200 text-red-700 dark:bg-red-900/30 dark:text-red-400";
+            default:
+                return "bg-gray-100 border-gray-200 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400";
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="space-y-4">
@@ -56,7 +69,7 @@ export function UpcomingDeadlines() {
                             <p className="text-sm text-muted-foreground">{deadline.course}</p>
                         </div>
                         <div className="flex flex-col items-end gap-2 text-right">
-                            <Badge variant="secondary" className={cn("font-normal pointer-events-none", deadline.statusColor)}>
+                            <Badge variant="outline" className={cn("font-normal pointer-events-none", getStatusColor(deadline.status))}>
                                 {deadline.status}
                             </Badge>
                             <span className="text-xs text-muted-foreground">{deadline.dueDate}</span>

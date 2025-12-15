@@ -15,7 +15,6 @@ const deadlines = [
         course: "Operating Systems",
         dueDate: "Today, 11:59 PM",
         status: "Due Today",
-        statusColor: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
     },
     {
         id: 2,
@@ -23,7 +22,6 @@ const deadlines = [
         course: "Database Systems",
         dueDate: "Tomorrow, 11:59 PM",
         status: "Upcoming",
-        statusColor: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
     },
     {
         id: 3,
@@ -31,7 +29,6 @@ const deadlines = [
         course: "Applied Numerical Methods",
         dueDate: "Dec 18, 11:59 PM",
         status: "Upcoming",
-        statusColor: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
     },
     {
         id: 4,
@@ -39,7 +36,6 @@ const deadlines = [
         course: "Applied Numerical Methods",
         dueDate: "Missed Yesterday",
         status: "Overdue",
-        statusColor: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
     }
 ];
 

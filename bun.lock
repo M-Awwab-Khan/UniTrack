@@ -74,6 +74,7 @@
         "@uni-track/auth": "workspace:*",
         "@uni-track/db": "workspace:*",
         "dotenv": "catalog:",
+        "drizzle-orm": "^0.45.1",
         "next": "catalog:",
         "zod": "catalog:",
       },

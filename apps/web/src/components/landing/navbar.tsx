@@ -24,12 +24,16 @@ export function Navbar() {
 
                 <div className="flex items-center gap-4">
                     <ModeToggle />
-                    <Button variant="ghost" size="sm" className="hidden sm:flex">
-                        Log in
-                    </Button>
-                    <Button size="sm">
-                        Get Started
-                    </Button>
+                    <Link href="/login" >
+                        <Button variant="ghost" size="sm" className="cursor-pointer hidden sm:flex">
+                            Log in
+                        </Button>
+                    </Link>
+                    <Link href="/register" >
+                        <Button size="sm" className="cursor-pointer">
+                            Get Started
+                        </Button>
+                    </Link>
                 </div>
             </div>
         </nav>

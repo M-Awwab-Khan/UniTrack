@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 interface CourseCardProps {
     course: Course;
@@ -105,8 +106,10 @@ export function CourseCard({ course }: CourseCardProps) {
                 </CardContent>
 
                 <CardFooter className="pt-2">
-                    <Button variant="ghost" className="w-full text-xs h-8 text-muted-foreground hover:text-primary">
-                        View Course Details
+                    <Button variant="ghost" className="w-full text-xs h-8 text-muted-foreground hover:text-primary" asChild>
+                        <Link href={`/dashboard/courses/${course.id}`}>
+                            View Course Details
+                        </Link>
                     </Button>
                 </CardFooter>
             </Card>

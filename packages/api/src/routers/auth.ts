@@ -88,116 +88,126 @@ export const authRouter = router({
             z.object({
                 inviteCode: z.string().min(1, "Invite code is required"),
                 password: z.string().min(8, "Password must be at least 8 characters"),
+                email: z.string().email("Invalid email address"), // Ensure email is passed and validated
+                name: z.string().min(1, "Name is required"),
             })
         )
         .mutation(async ({ input }) => {
-            // Find invite by code
-            const invite = await db.query.taInvites.findFirst({
-                where: eq(taInvites.inviteCode, input.inviteCode),
-                with: {
-                    courses: {
-                        with: {
-                            course: true,
-                        },
+            return await db.transaction(async (tx) => {
+                // 1. Find and Validate Invite
+                const invite = await tx.query.taInvites.findFirst({
+                    where: eq(taInvites.inviteCode, input.inviteCode),
+                    with: {
+                        courses: true,
+                        permissions: true,
                     },
-                    permissions: true,
-                },
-            });
-
-            if (!invite) {
-                throw new TRPCError({
-                    code: "NOT_FOUND",
-                    message: "Invalid invite code",
                 });
-            }
 
-            // Validate invite status
-            if (invite.status !== "active") {
-                throw new TRPCError({
-                    code: "BAD_REQUEST",
-                    message: `This invite has been ${invite.status}`,
+                if (!invite) {
+                    throw new TRPCError({
+                        code: "NOT_FOUND",
+                        message: "Invalid invite code",
+                    });
+                }
+
+                // Status Check
+                if (invite.status !== "active") {
+                    throw new TRPCError({
+                        code: "BAD_REQUEST",
+                        message: `This invite is no longer active (Status: ${invite.status})`,
+                    });
+                }
+
+                // Expiry Check
+                if (invite.expiresAt && new Date() > new Date(invite.expiresAt)) {
+                    // Auto-expire if checking
+                    await tx
+                        .update(taInvites)
+                        .set({ status: "expired" })
+                        .where(eq(taInvites.id, invite.id));
+
+                    throw new TRPCError({
+                        code: "BAD_REQUEST",
+                        message: "This invite has expired",
+                    });
+                }
+
+                // Email Match Check
+                if (invite.email.toLowerCase() !== input.email.toLowerCase()) {
+                    throw new TRPCError({
+                        code: "FORBIDDEN",
+                        message: "This invite code is not for this email address",
+                    });
+                }
+
+                // Check for existing user
+                const existingUser = await tx.query.user.findFirst({
+                    where: eq(user.email, input.email),
                 });
-            }
 
-            // Check expiry
-            if (invite.expiresAt && new Date() > new Date(invite.expiresAt)) {
-                // Mark as expired
-                await db
+                if (existingUser) {
+                    throw new TRPCError({
+                        code: "CONFLICT",
+                        message: "An account with this email already exists",
+                    });
+                }
+
+                // 2. Create User & Account
+                const hashedPassword = await hashPassword(input.password);
+                const userId = generateId();
+                const accountId = generateId();
+
+                await tx.insert(user).values({
+                    id: userId,
+                    name: input.name,
+                    email: input.email,
+                    emailVerified: true,
+                    role: "ta",
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                });
+
+                await tx.insert(account).values({
+                    id: accountId,
+                    accountId: input.email,
+                    providerId: "credential",
+                    userId: userId,
+                    password: hashedPassword,
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                });
+
+                // 3. Create TA Profile
+                await tx.insert(taProfile).values({
+                    id: crypto.randomUUID(),
+                    userId,
+                    department: invite.department,
+                });
+
+                // 4. Assign Courses
+                if (invite.courses && invite.courses.length > 0) {
+                    await tx.insert(courseTas).values(
+                        invite.courses.map((ic) => ({
+                            taId: userId,
+                            courseId: ic.courseId,
+                        }))
+                    );
+                }
+
+                // 5. Mark Invite Used
+                await tx
                     .update(taInvites)
-                    .set({ status: "expired" })
+                    .set({
+                        status: "used",
+                        usedAt: new Date(),
+                    })
                     .where(eq(taInvites.id, invite.id));
 
-                throw new TRPCError({
-                    code: "BAD_REQUEST",
-                    message: "This invite has expired",
-                });
-            }
-
-            // Check if email already has account
-            const existingUser = await db.query.user.findFirst({
-                where: eq(user.email, invite.email),
+                return {
+                    success: true,
+                    userId,
+                    message: "TA account created successfully",
+                };
             });
-
-            if (existingUser) {
-                throw new TRPCError({
-                    code: "CONFLICT",
-                    message: "An account with this email already exists",
-                });
-            }
-
-            // Hash password and create user
-            const hashedPassword = await hashPassword(input.password);
-            const userId = generateId();
-            const accountId = generateId();
-
-            // Create user
-            await db.insert(user).values({
-                id: userId,
-                name: invite.fullName,
-                email: invite.email,
-                emailVerified: true, // Auto-verify since invite is pre-validated
-                role: "ta",
-            });
-
-            // Create credential account for password login
-            await db.insert(account).values({
-                id: accountId,
-                accountId: invite.email,
-                providerId: "credential",
-                userId: userId,
-                password: hashedPassword,
-            });
-
-            // Create TA profile
-            await db.insert(taProfile).values({
-                id: crypto.randomUUID(),
-                userId,
-                department: invite.department,
-            });
-
-            // Assign courses
-            if (invite.courses && invite.courses.length > 0) {
-                await db.insert(courseTas).values(
-                    invite.courses.map((ic) => ({
-                        taId: userId,
-                        courseId: ic.courseId,
-                    }))
-                );
-            }
-
-            // Mark invite as used
-            await db
-                .update(taInvites)
-                .set({
-                    status: "used",
-                    usedAt: new Date(),
-                })
-                .where(eq(taInvites.id, invite.id));
-
-            return {
-                success: true,
-                userId,
-                message: "TA account created successfully",
-            };
         }),
 });

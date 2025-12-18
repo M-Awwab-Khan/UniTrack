@@ -107,18 +107,59 @@ export function RegisterForm() {
         setStep(2);
     };
 
+    const registerTaWithInvite = useMutation(trpc.auth.registerTaWithInvite.mutationOptions({
+        onSuccess: async (_, variables) => {
+            // Log in the user after successful registration
+            try {
+                await authClient.signIn.email({
+                    email: variables.email,
+                    password: variables.password,
+                    callbackURL: "/dashboard",
+                }, {
+                    onSuccess: () => {
+                        toast.success("Account created and logged in successfully!");
+                        router.push("/dashboard");
+                    },
+                    onError: (ctx) => {
+                        toast.error("Account created, but failed to log in. Please sign in manually.", {
+                            description: ctx.error.message
+                        });
+                        router.push("/login");
+                    }
+                });
+            } catch (err) {
+                toast.error("Registration successful, but login failed. Please sign in manually.");
+                router.push("/login");
+            }
+        },
+        onError: (error) => {
+            toast.error(error.message);
+            setIsLoading(false);
+        },
+    }));
+
     async function onSubmit(values: any) {
         setIsLoading(true);
         try {
+            if (values.role === "ta") {
+                // TA Specific Flow
+                await registerTaWithInvite.mutateAsync({
+                    email: values.email,
+                    password: values.password,
+                    name: values.name,
+                    inviteCode: values.inviteCode,
+                });
+                return;
+            }
+
+            // Default Better Auth Flow
             await authClient.signUp.email({
                 email: values.email,
                 password: values.password,
                 name: values.name,
                 // @ts-ignore - better-auth types might need update or mapped correctly
                 role: values.role,
-                // Pass additional metadata or fields as needed by your auth setup
-                // If using custom fields, ensure better-auth is configured to receive them or use a separate API call to create profile
-                image: undefined, // optional
+                image: undefined,
                 fetchOptions: {
                     onError: (ctx) => {
                         toast.error(ctx.error.message);
@@ -134,24 +175,17 @@ export function RegisterForm() {
                                 semester: values.semester,
                                 batch: values.batch,
                             });
-                            // Success/error handling is in the mutation options above
                         } catch (profileError) {
                             console.error("Profile creation failed", profileError);
-                            // Error toast is in mutation onError
                             router.push("/dashboard");
                         }
                     }
                 }
             });
-            // Note: In a real implementation with separate profile tables, 
-            // you might need to hook into the signUp success or call a separate API endpoint to create the profile record.
-            // Better-auth's `signUp` mainly handles the `user` table. 
-            // For this implementation, we'll assume there is a hook or we need to do it manually.
-            // However, for correct auth, checking if the user was created is enough for now.
 
         } catch (error) {
-            toast.error("Something went wrong");
-            setIsLoading(false);
+            // Error handled in mutation/fetchOptions
+            if (!isLoading) setIsLoading(false);
         }
     }
 

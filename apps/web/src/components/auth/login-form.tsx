@@ -45,8 +45,16 @@ export function LoginForm() {
                     onResponse: () => {
                         setIsLoading(false);
                     },
-                    onSuccess: () => {
-                        router.push("/dashboard");
+                    onSuccess: async () => {
+                        console.log("success")
+                        const session = await authClient.getSession();
+                        console.log(session);
+
+                        if (session.data?.user?.role === "admin") {
+                            router.push("/admin/ta-invites");
+                        } else {
+                            router.push("/dashboard");
+                        }
                     },
                     onError: (ctx) => {
                         toast.error(ctx.error.message);

@@ -12,6 +12,13 @@ export const auth = betterAuth({
 			},
 		},
 	},
+	session: {
+		additionalFields: {
+			role: {
+				type: "string",
+			},
+		},
+	},
 	database: drizzleAdapter(db, {
 		provider: "pg",
 

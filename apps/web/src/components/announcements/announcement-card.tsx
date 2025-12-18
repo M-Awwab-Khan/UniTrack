@@ -3,7 +3,7 @@
 
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { type GlobalAnnouncement } from "./mock-data";
+import type { GlobalAnnouncement } from "./mock-data";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, UserCircle, AlertCircle, Paperclip } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";

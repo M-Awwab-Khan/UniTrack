@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { type GlobalAnnouncement } from "./mock-data";
+import type { GlobalAnnouncement } from "./mock-data";
 import { format } from "date-fns";
 import {
     Calendar,

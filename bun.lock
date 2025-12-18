@@ -103,6 +103,7 @@
     "packages/db": {
       "name": "@uni-track/db",
       "dependencies": {
+        "better-auth": "catalog:",
         "dotenv": "catalog:",
         "drizzle-orm": "^0.45.1",
         "pg": "^8.16.3",

@@ -60,9 +60,9 @@ export function AnnouncementDetailDialog({ isOpen, onClose, announcement }: Anno
                                 {announcement.title}
                             </DialogTitle>
                         </div>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 -mt-2 -mr-2 text-muted-foreground" onClick={onClose}>
+                        {/* <Button variant="ghost" size="icon" className="h-8 w-8 -mt-2 -mr-2 text-muted-foreground" onClick={onClose}>
                             <X className="w-4 h-4" />
-                        </Button>
+                        </Button> */}
                     </div>
 
                     {/* Meta Row */}

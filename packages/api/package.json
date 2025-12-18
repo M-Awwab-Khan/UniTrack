@@ -15,13 +15,15 @@
     "@uni-track/config": "workspace:*"
   },
   "dependencies": {
-    "@trpc/server": "catalog:",
     "@trpc/client": "catalog:",
-    "next": "catalog:",
-    "dotenv": "catalog:",
-    "zod": "catalog:",
+    "@trpc/server": "catalog:",
     "@uni-track/auth": "workspace:*",
     "@uni-track/db": "workspace:*",
-    "drizzle-orm": "^0.45.1"
+    "better-auth": "^1.4.7",
+    "dotenv": "catalog:",
+    "drizzle-orm": "^0.45.1",
+    "nanoid": "^5.1.6",
+    "next": "catalog:",
+    "zod": "catalog:"
   }
 }

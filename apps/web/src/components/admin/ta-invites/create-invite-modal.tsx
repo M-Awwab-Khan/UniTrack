@@ -10,43 +10,61 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, Copy, Plus } from "lucide-react";
-import { ALL_COURSES, PERMISSION_OPTIONS } from "./mock-data";
+import { RefreshCw, Plus, Loader2 } from "lucide-react";
+import { PERMISSION_OPTIONS } from "./mock-data";
 import { toast } from "sonner";
+import { useTRPC } from "@/utils/trpc";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 interface CreateInviteModalProps {
     isOpen: boolean;
     onClose: () => void;
+    onSuccess?: () => void;
 }
 
-export function CreateInviteModal({ isOpen, onClose }: CreateInviteModalProps) {
+export function CreateInviteModal({ isOpen, onClose, onSuccess }: CreateInviteModalProps) {
+    const trpc = useTRPC();
     // Form State
     const [fullName, setFullName] = useState("");
     const [email, setEmail] = useState("");
     const [department, setDepartment] = useState("CS");
     const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
     const [selectedPermissions, setSelectedPermissions] = useState<string[]>(['create_assignments']);
-    const [inviteCode, setInviteCode] = useState("");
 
-    // Generate code on open
-    useEffect(() => {
-        if (isOpen && !inviteCode) {
-            generateCode();
-        }
-    }, [isOpen]);
+    // Fetch courses
+    const { data: courses = [], isLoading: coursesLoading } = useQuery(trpc.admin.getCourses.queryOptions(undefined, {
+        enabled: isOpen,
+    }));
 
-    const generateCode = () => {
-        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // No I, O, 0, 1
-        let result = 'TA-';
-        for (let i = 0; i < 4; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
-        result += '-';
-        for (let i = 0; i < 4; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
-        setInviteCode(result);
+
+    // Create invite mutation
+    const createInvite = useMutation(trpc.admin.createTaInvite.mutationOptions({
+        onSuccess: (data: { inviteCode: string }) => {
+            toast.success(`Invite created successfully!`, {
+                description: `Invite code: ${data.inviteCode}`,
+            });
+            resetForm();
+            onClose();
+            onSuccess?.();
+        },
+        onError: (error: any) => {
+            toast.error("Failed to create invite", {
+                description: error.message,
+            });
+        },
+    }));
+
+    const resetForm = () => {
+        setFullName("");
+        setEmail("");
+        setDepartment("CS");
+        setSelectedCourses([]);
+        setSelectedPermissions(['create_assignments']);
     };
 
-    const handleCourseToggle = (code: string) => {
+    const handleCourseToggle = (courseId: string) => {
         setSelectedCourses(prev =>
-            prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code]
+            prev.includes(courseId) ? prev.filter(c => c !== courseId) : [...prev, courseId]
         );
     };
 
@@ -59,35 +77,25 @@ export function CreateInviteModal({ isOpen, onClose }: CreateInviteModalProps) {
     const handleSubmit = () => {
         // Validation
         if (!fullName || !email) {
-            alert("Please fill in all required fields.");
+            toast.error("Please fill in all required fields");
             return;
         }
         if (selectedCourses.length === 0) {
-            alert("Please assign at least one course.");
+            toast.error("Please assign at least one course");
+            return;
+        }
+        if (selectedPermissions.length === 0) {
+            toast.error("Please select at least one permission");
             return;
         }
 
-        // Mock Submit
-        const newInvite = {
-            taName: fullName,
-            taEmail: email,
-            inviteCode,
-            assignedCourses: selectedCourses,
+        createInvite.mutate({
+            fullName,
+            email,
+            department,
+            courseIds: selectedCourses,
             permissions: selectedPermissions,
-            createdOn: new Date().toISOString(),
-            status: 'Active'
-        };
-
-        console.log("Creating Invite:", newInvite);
-        alert(`Invite created for ${email}!`);
-
-        // Reset and Close
-        onClose();
-        setFullName("");
-        setEmail("");
-        setSelectedCourses([]);
-        setSelectedPermissions(['create_assignments']);
-        generateCode();
+        });
     };
 
     return (
@@ -106,72 +114,90 @@ export function CreateInviteModal({ isOpen, onClose }: CreateInviteModalProps) {
                         <div className="grid sm:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="name">Full Name <span className="text-red-500">*</span></Label>
-                                <Input id="name" placeholder="Inam ul Haq" value={fullName} onChange={e => setFullName(e.target.value)} />
+                                <Input
+                                    id="name"
+                                    placeholder="Inam ul Haq"
+                                    value={fullName}
+                                    onChange={e => setFullName(e.target.value)}
+                                    disabled={createInvite.isPending}
+                                />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="email">University Email <span className="text-red-500">*</span></Label>
-                                <Input id="email" type="email" placeholder="inam@uni.edu" value={email} onChange={e => setEmail(e.target.value)} />
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    placeholder="inam@uni.edu"
+                                    value={email}
+                                    onChange={e => setEmail(e.target.value)}
+                                    disabled={createInvite.isPending}
+                                />
                             </div>
                         </div>
 
-                        {/* 2. Department & Invite Configuration */}
-                        <div className="grid sm:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label>Department</Label>
-                                <Select value={department} onValueChange={setDepartment}>
-                                    <SelectTrigger>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="CS">Computer Science</SelectItem>
-                                        <SelectItem value="SE">Software Engineering</SelectItem>
-                                        <SelectItem value="EE">Electrical Engineering</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Invite Code (Auto-generated)</Label>
-                                <div className="flex gap-2">
-                                    <Input value={inviteCode} readOnly className="font-mono bg-muted text-center tracking-widest" />
-                                    <Button variant="outline" size="icon" onClick={generateCode} title="Regenerate">
-                                        <RefreshCw className="w-4 h-4" />
-                                    </Button>
-                                </div>
-                            </div>
+                        {/* 2. Department */}
+                        <div className="space-y-2">
+                            <Label>Department</Label>
+                            <Select value={department} onValueChange={setDepartment} disabled={createInvite.isPending}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="CS">Computer Science</SelectItem>
+                                    <SelectItem value="SE">Software Engineering</SelectItem>
+                                    <SelectItem value="EE">Electrical Engineering</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
 
                         {/* 3. Course Assignment */}
                         <div className="space-y-3">
                             <Label>Assign Courses <span className="text-red-500">*</span></Label>
                             <div className="border rounded-lg p-3 bg-muted/10">
-                                <ScrollArea className="h-32 pr-2">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                        {ALL_COURSES.map(course => (
-                                            <div key={course.code} className="flex items-center space-x-2 rounded-md border p-2 bg-card hover:bg-accent/50 transition-colors">
-                                                <Checkbox
-                                                    id={`course-${course.code}`}
-                                                    checked={selectedCourses.includes(course.code)}
-                                                    onCheckedChange={() => handleCourseToggle(course.code)}
-                                                />
-                                                <div className="grid gap-0.5 leading-none">
-                                                    <label
-                                                        htmlFor={`course-${course.code}`}
-                                                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                                                    >
-                                                        {course.code}
-                                                    </label>
-                                                    <p className="text-xs text-muted-foreground line-clamp-1">{course.name}</p>
-                                                </div>
-                                            </div>
-                                        ))}
+                                {coursesLoading ? (
+                                    <div className="flex items-center justify-center h-32">
+                                        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                                     </div>
-                                </ScrollArea>
+                                ) : courses.length === 0 ? (
+                                    <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
+                                        No courses available
+                                    </div>
+                                ) : (
+                                    <ScrollArea className="h-32 pr-2">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            {(courses as any[]).map((course: any) => (
+                                                <div key={course.id} className="flex items-center space-x-2 rounded-md border p-2 bg-card hover:bg-accent/50 transition-colors">
+                                                    <Checkbox
+                                                        id={`course-${course.id}`}
+                                                        checked={selectedCourses.includes(course.id)}
+                                                        onCheckedChange={() => handleCourseToggle(course.id)}
+                                                        disabled={createInvite.isPending}
+                                                    />
+                                                    <div className="grid gap-0.5 leading-none">
+                                                        <label
+                                                            htmlFor={`course-${course.id}`}
+                                                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                                                        >
+                                                            {course.code}
+                                                        </label>
+                                                        <p className="text-xs text-muted-foreground line-clamp-1">{course.name}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </ScrollArea>
+                                )}
                             </div>
                             {selectedCourses.length > 0 && (
                                 <div className="flex flex-wrap gap-1 mt-2">
-                                    {selectedCourses.map(c => (
-                                        <Badge key={c} variant="secondary" className="text-[10px] h-5">{c}</Badge>
-                                    ))}
+                                    {selectedCourses.map((courseId: string) => {
+                                        const course = (courses as any[]).find((c: any) => c.id === courseId);
+                                        return course ? (
+                                            <Badge key={courseId} variant="secondary" className="text-[10px] h-5">
+                                                {course.code}
+                                            </Badge>
+                                        ) : null;
+                                    })}
                                 </div>
                             )}
                         </div>
@@ -186,6 +212,7 @@ export function CreateInviteModal({ isOpen, onClose }: CreateInviteModalProps) {
                                             id={permission.id}
                                             checked={selectedPermissions.includes(permission.id)}
                                             onCheckedChange={() => handlePermissionToggle(permission.id)}
+                                            disabled={createInvite.isPending}
                                         />
                                         <div className="space-y-1 leading-none">
                                             <Label htmlFor={permission.id} className="cursor-pointer">
@@ -203,9 +230,17 @@ export function CreateInviteModal({ isOpen, onClose }: CreateInviteModalProps) {
                 </ScrollArea>
 
                 <DialogFooter className="p-6 py-4 border-t bg-muted/5 gap-2">
-                    <Button variant="outline" onClick={onClose}>Cancel</Button>
-                    <Button onClick={handleSubmit} className="gap-2">
-                        <Plus className="w-4 h-4" /> Create Invite
+                    <Button variant="outline" onClick={onClose} disabled={createInvite.isPending}>Cancel</Button>
+                    <Button onClick={handleSubmit} disabled={createInvite.isPending} className="gap-2">
+                        {createInvite.isPending ? (
+                            <>
+                                <Loader2 className="w-4 h-4 animate-spin" /> Creating...
+                            </>
+                        ) : (
+                            <>
+                                <Plus className="w-4 h-4" /> Create Invite
+                            </>
+                        )}
                     </Button>
                 </DialogFooter>
             </DialogContent>

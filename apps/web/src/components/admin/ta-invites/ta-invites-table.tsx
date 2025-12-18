@@ -19,42 +19,30 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Copy, Trash2, Ban, Eye } from "lucide-react";
+import { MoreHorizontal, Copy, Ban, Eye } from "lucide-react";
 import { type TAInvite } from "./mock-data";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
 import { toast } from "sonner"; // Assuming sonner is set up, or just console log/alert for now
 
 interface TAInvitesTableProps {
     invites: TAInvite[];
+    onRevoke: (id: string) => void;
+    isRevoking?: boolean;
 }
 
-export function TAInvitesTable({ invites: initialInvites }: TAInvitesTableProps) {
-    const [invites, setInvites] = useState(initialInvites);
-
+export function TAInvitesTable({ invites, onRevoke, isRevoking }: TAInvitesTableProps) {
     const handleCopyCode = (code: string) => {
         navigator.clipboard.writeText(code);
-        // In a real app, use toast here
-        alert(`Copied code: ${code}`);
-    };
-
-    const handleRevoke = (id: string) => {
-        setInvites(invites.map(invite =>
-            invite.id === id ? { ...invite, status: 'Revoked' } : invite
-        ));
-    };
-
-    const handleDelete = (id: string) => {
-        setInvites(invites.filter(invite => invite.id !== id));
+        toast.success("Invite code copied to clipboard!");
     };
 
     const getStatusColor = (status: TAInvite['status']) => {
         switch (status) {
-            case 'Active': return "bg-emerald-100 text-emerald-700 hover:bg-emerald-100/80 border-emerald-200";
-            case 'Used': return "bg-blue-100 text-blue-700 hover:bg-blue-100/80 border-blue-200";
-            case 'Expired': return "bg-orange-100 text-orange-700 hover:bg-orange-100/80 border-orange-200";
-            case 'Revoked': return "bg-red-100 text-red-700 hover:bg-red-100/80 border-red-200";
+            case 'active': return "bg-emerald-100 text-emerald-700 hover:bg-emerald-100/80 border-emerald-200";
+            case 'used': return "bg-blue-100 text-blue-700 hover:bg-blue-100/80 border-blue-200";
+            case 'expired': return "bg-orange-100 text-orange-700 hover:bg-orange-100/80 border-orange-200";
+            case 'revoked': return "bg-red-100 text-red-700 hover:bg-red-100/80 border-red-200";
             default: return "bg-gray-100 text-gray-700";
         }
     };
@@ -115,7 +103,7 @@ export function TAInvitesTable({ invites: initialInvites }: TAInvitesTableProps)
                                     </div>
                                 </TableCell>
                                 <TableCell>
-                                    <Badge variant="secondary" className={cn("font-medium border shadow-none", getStatusColor(invite.status))}>
+                                    <Badge variant="secondary" className={cn("font-medium border shadow-none capitalize", getStatusColor(invite.status))}>
                                         {invite.status}
                                     </Badge>
                                 </TableCell>
@@ -139,20 +127,15 @@ export function TAInvitesTable({ invites: initialInvites }: TAInvitesTableProps)
                                                 <Eye className="mr-2 h-4 w-4" /> View Details
                                             </DropdownMenuItem>
                                             <DropdownMenuSeparator />
-                                            {invite.status === 'Active' && (
+                                            {invite.status === 'active' && (
                                                 <DropdownMenuItem
-                                                    onClick={() => handleRevoke(invite.id)}
+                                                    onClick={() => onRevoke(invite.id)}
+                                                    disabled={isRevoking}
                                                     className="text-red-600 focus:text-red-600 focus:bg-red-50"
                                                 >
                                                     <Ban className="mr-2 h-4 w-4" /> Revoke Invite
                                                 </DropdownMenuItem>
                                             )}
-                                            <DropdownMenuItem
-                                                onClick={() => handleDelete(invite.id)}
-                                                className="text-red-600 focus:text-red-600 focus:bg-red-50"
-                                            >
-                                                <Trash2 className="mr-2 h-4 w-4" /> Delete Record
-                                            </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </TableCell>

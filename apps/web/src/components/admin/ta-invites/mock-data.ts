@@ -5,7 +5,7 @@ export interface TAInvite {
     taEmail: string;
     inviteCode: string;
     assignedCourses: { code: string; name: string }[];
-    status: 'Active' | 'Used' | 'Expired' | 'Revoked';
+    status: 'active' | 'used' | 'expired' | 'revoked';
     permissions: string[]; // e.g. ["create_assignments", "post_announcements"]
     createdOn: string; // ISO date
     expiresOn?: string; // ISO date
@@ -18,7 +18,7 @@ export const MOCK_INVITES: TAInvite[] = [
         taEmail: 'alice.johnson@uni.edu',
         inviteCode: 'TA-8X92-221B',
         assignedCourses: [{ code: 'CS-301', name: 'Applied Numerical Methods' }],
-        status: 'Active',
+        status: 'active',
         permissions: ['create_assignments', 'post_announcements', 'upload_notes'],
         createdOn: new Date().toISOString(),
         expiresOn: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString() // Expires in 7 days
@@ -32,7 +32,7 @@ export const MOCK_INVITES: TAInvite[] = [
             { code: 'CS-302L', name: 'Database Systems Lab' },
             { code: 'CS-302', name: 'Database Systems' }
         ],
-        status: 'Used',
+        status: 'used',
         permissions: ['create_assignments', 'edit_assignments', 'post_announcements', 'upload_notes', 'edit_timetable'],
         createdOn: new Date(new Date().setDate(new Date().getDate() - 5)).toISOString()
     },
@@ -42,7 +42,7 @@ export const MOCK_INVITES: TAInvite[] = [
         taEmail: 'charlie.d@uni.edu',
         inviteCode: 'TA-EXP-1234',
         assignedCourses: [{ code: 'SE-201', name: 'Software Engineering' }],
-        status: 'Expired',
+        status: 'expired',
         permissions: ['create_assignments'],
         createdOn: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString(),
         expiresOn: new Date(new Date().setDate(new Date().getDate() - 23)).toISOString()
@@ -53,7 +53,7 @@ export const MOCK_INVITES: TAInvite[] = [
         taEmail: 'david.r@uni.edu',
         inviteCode: 'TA-REV-5678',
         assignedCourses: [{ code: 'CS-101', name: 'Intro to Computing' }],
-        status: 'Revoked',
+        status: 'revoked',
         permissions: ['all'],
         createdOn: new Date(new Date().setDate(new Date().getDate() - 10)).toISOString()
     }

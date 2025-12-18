@@ -8,6 +8,20 @@
       "when": 1765638630004,
       "tag": "0000_quick_alice",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1766037980976,
+      "tag": "0001_superb_changeling",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1766038874613,
+      "tag": "0002_smooth_wilson_fisk",
+      "breakpoints": true
     }
   ]
 }

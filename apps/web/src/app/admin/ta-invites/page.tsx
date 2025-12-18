@@ -4,13 +4,35 @@
 import { useState } from "react";
 import { TAInvitesTable } from "@/components/admin/ta-invites/ta-invites-table";
 import { CreateInviteModal } from "@/components/admin/ta-invites/create-invite-modal";
-import { MOCK_INVITES } from "@/components/admin/ta-invites/mock-data";
 import { Button } from "@/components/ui/button";
-import { Plus, Users } from "lucide-react";
+import { Plus, Users, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useTRPC } from "@/utils/trpc";
+import { toast } from "sonner";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 export default function AdminTAInvitesPage() {
+    const trpc = useTRPC();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+    const { data: invites, isLoading, refetch } = useQuery(trpc.admin.getTaInvites.queryOptions());
+
+    // Revoke mutation
+    const revokeMutation = useMutation(trpc.admin.revokeTaInvite.mutationOptions({
+        onSuccess: () => {
+            toast.success("Invite revoked successfully");
+            refetch();
+        },
+        onError: (error: any) => {
+            toast.error("Failed to revoke invite", {
+                description: error.message,
+            });
+        },
+    }));
+
+    const handleRevoke = (inviteId: string) => {
+        revokeMutation.mutate({ inviteId });
+    };
 
     return (
         <div className="space-y-6">
@@ -30,32 +52,48 @@ export default function AdminTAInvitesPage() {
                 </Button>
             </div>
 
-            {/* Metrics (Optional, keeps it looking "admin-y") */}
+            {/* Metrics */}
             <div className="grid gap-4 md:grid-cols-3">
                 <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6">
                     <div className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <h3 className="tracking-tight text-sm font-medium">Total Active Invites</h3>
                         <Users className="h-4 w-4 text-muted-foreground" />
                     </div>
-                    <div className="text-2xl font-bold">{MOCK_INVITES.filter(i => i.status === 'Active').length}</div>
+                    <div className="text-2xl font-bold">
+                        {isLoading ? (
+                            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                        ) : (
+                            (invites as any[])?.filter((i: any) => i.status === 'active').length || 0
+                        )}
+                    </div>
                     <p className="text-xs text-muted-foreground">Ready to be used</p>
                 </div>
-                {/* We could add more metrics here like "Total TAs", "Expiring Soon" etc. */}
             </div>
 
             {/* Main Table */}
-            <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-            >
-                <TAInvitesTable invites={MOCK_INVITES} />
-            </motion.div>
+            {isLoading ? (
+                <div className="flex items-center justify-center py-12 border rounded-lg bg-card">
+                    <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                </div>
+            ) : (
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                >
+                    <TAInvitesTable
+                        invites={(invites as any[]) || []}
+                        onRevoke={handleRevoke}
+                        isRevoking={revokeMutation.isPending}
+                    />
+                </motion.div>
+            )}
 
             {/* Modal */}
             <CreateInviteModal
                 isOpen={isCreateModalOpen}
                 onClose={() => setIsCreateModalOpen(false)}
+                onSuccess={() => refetch()}
             />
         </div>
     );

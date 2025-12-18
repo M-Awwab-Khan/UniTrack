@@ -5,6 +5,13 @@ import { db } from "@uni-track/db";
 import * as schema from "@uni-track/db/schema/auth";
 
 export const auth = betterAuth({
+	user: {
+		additionalFields: {
+			role: {
+				type: "string",
+			},
+		},
+	},
 	database: drizzleAdapter(db, {
 		provider: "pg",
 
@@ -14,5 +21,5 @@ export const auth = betterAuth({
 	emailAndPassword: {
 		enabled: true,
 	},
-  plugins: [nextCookies()]
+	plugins: [nextCookies()]
 });

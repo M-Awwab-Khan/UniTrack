@@ -43,7 +43,7 @@ export function NoteCard({ note, onClick }: NoteCardProps) {
             animate={{ opacity: 1, scale: 1 }}
             whileHover={{ y: -4, transition: { duration: 0.2 } }}
             onClick={onClick}
-            className="group relative bg-card hover:bg-accent/5 rounded-xl border p-5 shadow-sm transition-all cursor-pointer flex flex-col justify-between overflow-hidden"
+            className="group relative bg-card hover:bg-accent/5 rounded-xl border p-4 shadow-sm transition-all cursor-pointer flex flex-col justify-between overflow-hidden"
         >
             {note.isNew && (
                 <div className="absolute top-3 right-3">
@@ -86,12 +86,12 @@ export function NoteCard({ note, onClick }: NoteCardProps) {
                     </div>
                 </div>
 
-                {/* Hover Action Overlay (optional or integrated) */}
+                {/* Hover Action Overlay (optional or integrated)
                 <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0">
                     <span className="text-xs font-medium text-primary flex items-center gap-1">
                         <Eye className="w-3.5 h-3.5" /> View
                     </span>
-                </div>
+                </div> */}
             </div>
         </motion.div>
     );

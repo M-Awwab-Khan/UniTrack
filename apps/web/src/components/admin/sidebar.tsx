@@ -41,8 +41,8 @@ const sidebarItems = [
         icon: Mail,
     },
     {
-        title: "Settings",
-        href: "/admin/settings",
+        title: "Timetable",
+        href: "/admin/timetable",
         icon: Settings,
     },
 ];

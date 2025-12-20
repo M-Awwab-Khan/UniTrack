@@ -6,6 +6,8 @@ import { assignmentsRouter } from "./assignments";
 import { announcementsRouter } from "./announcements";
 import { notesRouter } from "./notes";
 import { coursesRouter } from "./courses";
+import { taRouter } from "./ta";
+import { timetableRouter } from "./timetable";
 
 export const appRouter = router({
 	healthCheck: publicProcedure.query(() => "ok"),
@@ -17,5 +19,7 @@ export const appRouter = router({
 	announcements: announcementsRouter,
 	notes: notesRouter,
 	courses: coursesRouter,
+	ta: taRouter,
+	timetable: timetableRouter,
 });
 export type AppRouter = typeof appRouter;

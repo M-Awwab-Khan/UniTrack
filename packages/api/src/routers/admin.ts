@@ -1,8 +1,8 @@
 import { router, protectedProcedure } from "../index";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { db, taInvites, taInviteCourses, taPermissions, courses, user } from "@uni-track/db";
-import { eq } from "drizzle-orm";
+import { db, taInvites, taInviteCourses, taPermissions, courses, user, semesters, timetableTemplates, academicEvents } from "@uni-track/db";
+import { eq, desc } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 // Admin middleware - ensures user is an admin
@@ -285,6 +285,81 @@ export const adminRouter = router({
 
             return items;
         }),
+    // Semester Management
+    createSemester: adminProcedure
+        .input(
+            z.object({
+                name: z.string().min(1, "Name is required"),
+                startDate: z.coerce.date(),
+                endDate: z.coerce.date().optional(),
+                status: z.enum(["active", "archived"]).default("active"),
+            })
+        )
+        .mutation(async ({ input }) => {
+            const [newSemester] = await db.insert(semesters).values({ ...input }).returning();
+            return newSemester;
+        }),
+
+    getSemesters: adminProcedure
+        .query(async () => {
+            return await db.query.semesters.findMany({
+                orderBy: [desc(semesters.startDate)],
+            });
+        }),
+
+    // Timetable Template Management
+    createTimetableTemplate: adminProcedure
+        .input(
+            z.object({
+                courseId: z.string().uuid(),
+                dayOfWeek: z.string(), // "0" to "6" or "monday" etc.
+                startTime: z.string(), // "HH:MM:SS"
+                endTime: z.string(),
+                location: z.string().min(1, "Location is required"),
+            })
+        )
+        .mutation(async ({ ctx, input }) => {
+            const [newTemplate] = await db
+                .insert(timetableTemplates)
+                .values({ ...input, createdByAdminId: ctx.session.user.id })
+                .returning();
+            return newTemplate;
+        }),
+
+    getTimetableTemplates: adminProcedure
+        .query(async () => {
+            return await db.query.timetableTemplates.findMany({
+                with: { course: true },
+                orderBy: [desc(timetableTemplates.createdAt)],
+            });
+        }),
+
+    // Academic Events Management
+    createAcademicEvent: adminProcedure
+        .input(
+            z.object({
+                title: z.string().min(1, "Title is required"),
+                type: z.enum(["break", "holiday", "exam", "event"]),
+                startDate: z.coerce.date(),
+                endDate: z.coerce.date(),
+                description: z.string().optional(),
+            })
+        )
+        .mutation(async ({ ctx, input }) => {
+            const [newEvent] = await db
+                .insert(academicEvents)
+                .values({ ...input, createdByAdminId: ctx.session.user.id })
+                .returning();
+            return newEvent;
+        }),
+
+    getAcademicEvents: adminProcedure
+        .query(async () => {
+            return await db.query.academicEvents.findMany({
+                orderBy: [desc(academicEvents.startDate)],
+            });
+        }),
+
     // Users Management Sub-router
     users: router({
         // List all users with filtering and pagination
@@ -396,10 +471,6 @@ export const adminRouter = router({
                         message: "User not found",
                     });
                 }
-
-                // If TA, fetch assigned courses
-                let permissions: string[] = [];
-                let assignedCourses: any[] = [];
 
                 // For this implementation, we will fetch simplified data. 
                 // Full course fetching for TA might require extra queries if relations aren't perfect.

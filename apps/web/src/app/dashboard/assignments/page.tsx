@@ -1,23 +1,54 @@
-
 "use client";
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { GLOBAL_ASSIGNMENTS, type GlobalAssignment } from "@/components/assignments/mock-data";
 import { AssignmentFilters } from "@/components/assignments/assignment-filters";
 import { AssignmentCard } from "@/components/assignments/assignment-card";
 import { AssignmentDetailsDialog } from "@/components/assignments/assignment-details-dialog";
 import { Button } from "@/components/ui/button";
-import { CalendarCheck, LayoutList, LayoutGrid } from "lucide-react";
+import { CalendarCheck, LayoutList, LayoutGrid, Plus, Loader2 } from "lucide-react";
+import { useTRPC } from "@/utils/trpc";
+import { type GlobalAssignment } from "@/components/assignments/mock-data";
+import { CreateAssignmentModal } from "@/components/assignments/create-assignment-modal";
+import { authClient } from "@/lib/auth-client";
+import { toast } from "sonner";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export default function GlobalAssignmentsPage() {
+    const trpc = useTRPC();
+    const queryClient = useQueryClient();
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("All");
     const [courseFilter, setCourseFilter] = useState("all");
+    const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+    const [createModalOpen, setCreateModalOpen] = useState(false);
 
-    const courses = Array.from(new Set(GLOBAL_ASSIGNMENTS.map(a => a.courseName)));
+    // Auth & Permissions
+    const { data: session } = authClient.useSession();
+    const isTA = session?.user?.role === "ta";
 
-    const filteredAssignments = GLOBAL_ASSIGNMENTS.filter((assignment) => {
+    // Data Fetching
+    const { data: assignmentsData, isLoading } = useQuery(trpc.assignments.getAll.queryOptions());
+
+    // Mutations
+    const deleteMutation = useMutation(trpc.assignments.delete.mutationOptions({
+        onSuccess: () => {
+            toast.success("Assignment deleted");
+            queryClient.invalidateQueries({ queryKey: [['assignments']] });
+        },
+        onError: (err: any) => {
+            toast.error(err.message || "Failed to delete");
+        }
+    }));
+
+    const assignments: GlobalAssignment[] = assignmentsData ? assignmentsData.map(a => ({
+        ...a,
+        courseColor: "bg-blue-500", // Fallback color logic could be improved
+    } as any)) : []; // Cast to match GlobalAssignment for now which has mock specific fields
+
+    const courses = Array.from(new Set(assignments.map(a => a.courseName)));
+
+    const filteredAssignments = assignments.filter((assignment) => {
         const matchesSearch =
             assignment.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             assignment.courseName.toLowerCase().includes(searchQuery.toLowerCase());
@@ -28,11 +59,8 @@ export default function GlobalAssignmentsPage() {
         return matchesSearch && matchesStatus && matchesCourse;
     }).sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
 
-    // Grouping logic (simplified for Today/This Week/Later)
-    // For this demo, we'll just render the list flat or could implement sections if needed.
-    // The plan specified "Group by: Today, This Week, Later".
-
-    const groupAssignments = (assignments: GlobalAssignment[]) => {
+    // Grouping logic (simplified)
+    const groupedAssignments = () => {
         const today = new Date();
         const grouped = {
             "Overdue": [] as GlobalAssignment[],
@@ -42,7 +70,7 @@ export default function GlobalAssignmentsPage() {
             "Completed": [] as GlobalAssignment[]
         };
 
-        assignments.forEach(assignment => {
+        filteredAssignments.forEach(assignment => {
             if (assignment.status === 'Completed') {
                 grouped["Completed"].push(assignment);
                 return;
@@ -68,14 +96,20 @@ export default function GlobalAssignmentsPage() {
         return grouped;
     };
 
-    const grouped = groupAssignments(filteredAssignments);
+    const grouped = groupedAssignments();
     const showGroups = searchQuery === "" && courseFilter === "all" && statusFilter === "All";
 
     // Modal State
     const [selectedAssignment, setSelectedAssignment] = useState<GlobalAssignment | null>(null);
 
+    const handleDelete = (id: string) => {
+        if (confirm("Are you sure you want to delete this assignment?")) {
+            deleteMutation.mutate({ id });
+        }
+    }
+
     return (
-        <div className="w-full max-w-5xl mx-auto pb-10 space-y-6">
+        <div className="w-full max-w-5xl mx-auto pb-10 space-y-6 relative min-h-screen">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
@@ -85,10 +119,20 @@ export default function GlobalAssignmentsPage() {
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" size="icon" className="h-9 w-9">
+                    <Button
+                        variant={viewMode === "list" ? "secondary" : "ghost"}
+                        size="icon"
+                        className="h-9 w-9"
+                        onClick={() => setViewMode("list")}
+                    >
                         <LayoutList className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground">
+                    <Button
+                        variant={viewMode === "grid" ? "secondary" : "ghost"}
+                        size="icon"
+                        className="h-9 w-9"
+                        onClick={() => setViewMode("grid")}
+                    >
                         <LayoutGrid className="h-4 w-4" />
                     </Button>
                 </div>
@@ -104,72 +148,105 @@ export default function GlobalAssignmentsPage() {
                 courses={courses}
             />
 
-            <div className="space-y-8">
-                {filteredAssignments.length > 0 ? (
-                    showGroups ? (
-                        Object.entries(grouped).map(([group, assignments]) => (
-                            assignments.length > 0 && (
-                                <motion.section
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    key={group}
-                                    className="space-y-3"
-                                >
-                                    <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider pl-1">{group}</h2>
-                                    <div className="space-y-3">
-                                        {assignments.map(assignment => (
-                                            <AssignmentCard
-                                                key={assignment.id}
-                                                assignment={assignment}
-                                                onClick={() => setSelectedAssignment(assignment)}
-                                            />
-                                        ))}
-                                    </div>
-                                </motion.section>
-                            )
-                        ))
+            {isLoading ? (
+                <div className="flex flex-col items-center justify-center py-24">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+                    <p className="text-muted-foreground">Loading assignments...</p>
+                </div>
+            ) : (
+                <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 gap-4" : "space-y-8"}>
+                    {filteredAssignments.length > 0 ? (
+                        showGroups && viewMode === "list" ? (
+                            Object.entries(grouped).map(([group, assignments]) => (
+                                assignments.length > 0 && (
+                                    <motion.section
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        key={group}
+                                        className="space-y-3"
+                                    >
+                                        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider pl-1">{group}</h2>
+                                        <div className="space-y-3">
+                                            {assignments.map(assignment => (
+                                                <AssignmentCard
+                                                    key={assignment.id}
+                                                    assignment={assignment}
+                                                    onClick={() => setSelectedAssignment(assignment)}
+                                                    canEdit={isTA}
+                                                    // Placeholder handlers until Edit Modal exists
+                                                    onEdit={() => toast.info("Edit Assignment not implemented in UI yet")}
+                                                    onDelete={() => handleDelete(assignment.id)}
+                                                />
+                                            ))}
+                                        </div>
+                                    </motion.section>
+                                )
+                            ))
+                        ) : (
+                            <div className={viewMode === "list" ? "space-y-3" : "contents"}>
+                                {filteredAssignments.map(assignment => (
+                                    <AssignmentCard
+                                        key={assignment.id}
+                                        assignment={assignment}
+                                        onClick={() => setSelectedAssignment(assignment)}
+                                        canEdit={isTA}
+                                        // Placeholder handlers until Edit Modal exists
+                                        onEdit={() => toast.info("Edit Assignment not implemented in UI yet")}
+                                        onDelete={() => handleDelete(assignment.id)}
+                                    />
+                                ))}
+                            </div>
+                        )
                     ) : (
-                        <div className="space-y-3">
-                            {filteredAssignments.map(assignment => (
-                                <AssignmentCard
-                                    key={assignment.id}
-                                    assignment={assignment}
-                                    onClick={() => setSelectedAssignment(assignment)}
-                                />
-                            ))}
-                        </div>
-                    )
-                ) : (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="flex flex-col items-center justify-center py-24 text-center border-2 border-dashed rounded-xl bg-muted/20"
-                    >
-                        <div className="bg-muted p-4 rounded-full mb-4">
-                            <CalendarCheck className="w-8 h-8 text-muted-foreground" />
-                        </div>
-                        <h3 className="text-lg font-semibold mb-2">You're all caught up! 🎉</h3>
-                        <p className="text-muted-foreground max-w-sm mb-6">
-                            No assignments found matching your current filters.
-                        </p>
-                        <Button
-                            variant="outline"
-                            onClick={() => {
-                                setSearchQuery("");
-                                setStatusFilter("All");
-                                setCourseFilter("all");
-                            }}
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="flex flex-col items-center justify-center py-24 text-center border-2 border-dashed rounded-xl bg-muted/20 col-span-full"
                         >
-                            Clear Filters
-                        </Button>
-                    </motion.div>
-                )}
-            </div>
+                            <div className="bg-muted p-4 rounded-full mb-4">
+                                <CalendarCheck className="w-8 h-8 text-muted-foreground" />
+                            </div>
+                            <h3 className="text-lg font-semibold mb-2">You're all caught up! 🎉</h3>
+                            <p className="text-muted-foreground max-w-sm mb-6">
+                                No assignments found matching your current filters.
+                            </p>
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    setSearchQuery("");
+                                    setStatusFilter("All");
+                                    setCourseFilter("all");
+                                }}
+                            >
+                                Clear Filters
+                            </Button>
+                        </motion.div>
+                    )}
+                </div>
+            )}
 
             <AssignmentDetailsDialog
                 isOpen={!!selectedAssignment}
                 onClose={() => setSelectedAssignment(null)}
                 assignment={selectedAssignment}
+            />
+
+            {/* TA Controls - Floating Action Button */}
+            {isTA && (
+                <div className="fixed bottom-8 right-8 z-50">
+                    <Button
+                        size="icon"
+                        className="h-14 w-14 rounded-full shadow-lg bg-primary hover:bg-primary/90 text-primary-foreground"
+                        onClick={() => setCreateModalOpen(true)}
+                    >
+                        <Plus className="h-6 w-6" />
+                    </Button>
+                </div>
+            )}
+
+            <CreateAssignmentModal
+                open={createModalOpen}
+                onOpenChange={setCreateModalOpen}
             />
         </div>
     );

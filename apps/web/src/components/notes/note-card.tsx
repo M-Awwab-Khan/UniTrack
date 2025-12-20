@@ -14,16 +14,22 @@ import {
     Download,
     Eye,
     Calendar,
-    UserCircle
+    UserCircle,
+    Pencil,
+    Trash2
 } from "lucide-react";
 import { format } from "date-fns";
+import { Button } from "@/components/ui/button";
 
 interface NoteCardProps {
     note: GlobalNote;
     onClick: () => void;
+    canEdit?: boolean;
+    onEdit?: (e: React.MouseEvent) => void;
+    onDelete?: (e: React.MouseEvent) => void;
 }
 
-export function NoteCard({ note, onClick }: NoteCardProps) {
+export function NoteCard({ note, onClick, canEdit, onEdit, onDelete }: NoteCardProps) {
     const getIcon = (type: GlobalNote['type']) => {
         switch (type) {
             case 'PDF':
@@ -45,6 +51,34 @@ export function NoteCard({ note, onClick }: NoteCardProps) {
             onClick={onClick}
             className="group relative bg-card hover:bg-accent/5 rounded-xl border p-4 shadow-sm transition-all cursor-pointer flex flex-col justify-between overflow-hidden"
         >
+            {/* TA Actions */}
+            {canEdit && (
+                <div className="absolute top-2 right-2 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-background/50 rounded-md p-0.5">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-primary"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onEdit?.(e);
+                        }}
+                    >
+                        <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-red-500"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete?.(e);
+                        }}
+                    >
+                        <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                </div>
+            )}
+
             {note.isNew && (
                 <div className="absolute top-3 right-3">
                     <Badge className="bg-blue-600 hover:bg-blue-700 text-[10px] px-1.5 h-5">NEW</Badge>

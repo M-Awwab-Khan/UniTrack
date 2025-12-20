@@ -100,7 +100,7 @@ export function CreateInviteModal({ isOpen, onClose, onSuccess }: CreateInviteMo
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col p-0 gap-0 sm:rounded-xl">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col p-0 gap-0 sm:rounded-xl">
                 <DialogHeader className="p-6 pb-4 border-b">
                     <DialogTitle>Create Teaching Assistant Invite</DialogTitle>
                     <DialogDescription>

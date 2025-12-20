@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -7,18 +6,51 @@ import { GLOBAL_NOTES, type GlobalNote } from "@/components/notes/mock-data";
 import { NoteFilters } from "@/components/notes/note-filters";
 import { NoteCard } from "@/components/notes/note-card";
 import { NotePreviewDialog } from "@/components/notes/note-preview-dialog";
-import { BookOpen, FolderOpen } from "lucide-react";
+import { BookOpen, FolderOpen, Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTRPC } from "@/utils/trpc";
+import { CreateNoteModal } from "@/components/notes/create-note-modal";
+import { authClient } from "@/lib/auth-client";
+import { toast } from "sonner";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 export default function NotesPage() {
+    const trpc = useTRPC();
+    const queryClient = useQueryClient();
     const [searchQuery, setSearchQuery] = useState("");
     const [typeFilter, setTypeFilter] = useState("All");
     const [courseFilter, setCourseFilter] = useState("all");
     const [selectedNote, setSelectedNote] = useState<GlobalNote | null>(null);
+    const [createModalOpen, setCreateModalOpen] = useState(false);
 
-    const courses = Array.from(new Set(GLOBAL_NOTES.map(n => n.courseName)));
+    // Auth & Permissions
+    const { data: session } = authClient.useSession();
+    const isTA = session?.user?.role === "ta";
 
-    const filteredNotes = GLOBAL_NOTES.filter((note) => {
+    // Data Fetching
+    const { data: notesData, isLoading } = useQuery(trpc.notes.getAll.queryOptions());
+
+    // Mutations
+    const deleteMutation = useMutation(trpc.notes.delete.mutationOptions({
+        onSuccess: () => {
+            toast.success("Note deleted");
+            queryClient.invalidateQueries({ queryKey: [['notes']] });
+        },
+        onError: (err: any) => {
+            toast.error(err.message || "Failed to delete");
+        }
+    }));
+
+    const notes: GlobalNote[] = notesData ? notesData.map(n => ({
+        ...n,
+        courseColor: "bg-blue-500", // Placeholder
+        uploadDate: n.uploadDate, // Ensure ISO string
+        fileSize: "N/A" // Placeholder
+    } as any)) : [];
+
+    const courses = Array.from(new Set(notes.map(n => n.courseName)));
+
+    const filteredNotes = notes.filter((note) => {
         const matchesSearch =
             note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             (note.description && note.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -30,8 +62,14 @@ export default function NotesPage() {
         return matchesSearch && matchesType && matchesCourse;
     }).sort((a, b) => new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime());
 
+    const handleDelete = (id: string) => {
+        if (confirm("Are you sure you want to delete this note?")) {
+            deleteMutation.mutate({ id });
+        }
+    }
+
     return (
-        <div className="w-full max-w-6xl mx-auto pb-10 space-y-6">
+        <div className="w-full max-w-6xl mx-auto pb-10 space-y-6 relative min-h-screen">
             {/* Page Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
                 <div>
@@ -59,52 +97,80 @@ export default function NotesPage() {
                 courses={courses}
             />
 
-            {/* Notes Grid */}
-            <div className="min-h-[400px]">
-                {filteredNotes.length > 0 ? (
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-                        <AnimatePresence mode="popLayout">
-                            {filteredNotes.map((note) => (
-                                <NoteCard
-                                    key={note.id}
-                                    note={note}
-                                    onClick={() => setSelectedNote(note)}
-                                />
-                            ))}
-                        </AnimatePresence>
-                    </div>
-                ) : (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="flex flex-col items-center justify-center py-24 text-center border-2 border-dashed rounded-xl bg-muted/20"
-                    >
-                        <div className="bg-muted p-4 rounded-full mb-4">
-                            <BookOpen className="w-8 h-8 text-muted-foreground" />
+            {isLoading ? (
+                <div className="flex flex-col items-center justify-center py-24">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+                    <p className="text-muted-foreground">Loading notes...</p>
+                </div>
+            ) : (
+                /* Notes Grid */
+                <div className="min-h-[400px]">
+                    {filteredNotes.length > 0 ? (
+                        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                            <AnimatePresence mode="popLayout">
+                                {filteredNotes.map((note) => (
+                                    <NoteCard
+                                        key={note.id}
+                                        note={note}
+                                        onClick={() => setSelectedNote(note)}
+                                        canEdit={isTA}
+                                        onEdit={() => toast.info("Edit not implemented yet")}
+                                        onDelete={() => handleDelete(note.id)}
+                                    />
+                                ))}
+                            </AnimatePresence>
                         </div>
-                        <h3 className="text-lg font-semibold mb-2">No notes found</h3>
-                        <p className="text-muted-foreground max-w-sm mb-6">
-                            Try adjusting your search or filters to find what you're looking for.
-                        </p>
-                        <Button
-                            variant="outline"
-                            onClick={() => {
-                                setSearchQuery("");
-                                setTypeFilter("All");
-                                setCourseFilter("all");
-                            }}
+                    ) : (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="flex flex-col items-center justify-center py-24 text-center border-2 border-dashed rounded-xl bg-muted/20"
                         >
-                            Clear Filters
-                        </Button>
-                    </motion.div>
-                )}
-            </div>
+                            <div className="bg-muted p-4 rounded-full mb-4">
+                                <BookOpen className="w-8 h-8 text-muted-foreground" />
+                            </div>
+                            <h3 className="text-lg font-semibold mb-2">No notes found</h3>
+                            <p className="text-muted-foreground max-w-sm mb-6">
+                                Try adjusting your search or filters to find what you're looking for.
+                            </p>
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    setSearchQuery("");
+                                    setTypeFilter("All");
+                                    setCourseFilter("all");
+                                }}
+                            >
+                                Clear Filters
+                            </Button>
+                        </motion.div>
+                    )}
+                </div>
+            )}
 
             {/* Preview Dialog */}
             <NotePreviewDialog
                 isOpen={!!selectedNote}
                 onClose={() => setSelectedNote(null)}
                 note={selectedNote}
+            />
+
+            {/* TA Controls - Floating Action Button */}
+            {isTA && (
+                <div className="fixed bottom-8 right-8 z-50">
+                    <Button
+                        size="icon"
+                        className="h-14 w-14 rounded-full shadow-lg bg-primary hover:bg-primary/90 text-primary-foreground"
+                        onClick={() => setCreateModalOpen(true)}
+                    >
+                        <Plus className="h-6 w-6" />
+                    </Button>
+                </div>
+            )}
+
+            <CreateNoteModal
+                open={createModalOpen}
+                onOpenChange={setCreateModalOpen}
             />
         </div>
     );

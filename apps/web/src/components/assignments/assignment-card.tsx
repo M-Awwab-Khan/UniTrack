@@ -7,15 +7,18 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button"; // Standard button import
 import { format, differenceInDays } from "date-fns";
-import { Clock, AlertCircle, CheckCircle2, Circle, ChevronRight, Bookmark } from "lucide-react";
+import { Clock, AlertCircle, CheckCircle2, Circle, ChevronRight, Bookmark, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AssignmentCardProps {
     assignment: GlobalAssignment;
     onClick?: () => void;
+    canEdit?: boolean;
+    onEdit?: (e: React.MouseEvent) => void;
+    onDelete?: (e: React.MouseEvent) => void;
 }
 
-export function AssignmentCard({ assignment, onClick }: AssignmentCardProps) {
+export function AssignmentCard({ assignment, onClick, canEdit, onEdit, onDelete }: AssignmentCardProps) {
     const dueDate = new Date(assignment.dueDate);
     const daysLeft = differenceInDays(dueDate, new Date());
 
@@ -45,7 +48,7 @@ export function AssignmentCard({ assignment, onClick }: AssignmentCardProps) {
             layout
         >
             <Card
-                className={cn("hover:shadow-md transition-all group cursor-pointer", cardBorder)}
+                className={cn("hover:shadow-md transition-all group cursor-pointer relative", cardBorder)}
                 onClick={onClick}
             >
                 <CardContent className="p-4 sm:p-5 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
@@ -85,6 +88,32 @@ export function AssignmentCard({ assignment, onClick }: AssignmentCardProps) {
 
                     {/* Right Section: Actions */}
                     <div className="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0 justify-end">
+                        {canEdit && (
+                            <div className="flex items-center gap-1 mr-2 bg-background/50 rounded-md p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onEdit?.(e);
+                                    }}
+                                >
+                                    <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-muted-foreground hover:text-red-500"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onDelete?.(e);
+                                    }}
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        )}
                         <Button variant="ghost" size="sm" className="hidden sm:flex h-8 gap-1 text-muted-foreground">
                             View Details
                             <ChevronRight className="w-3.5 h-3.5" />

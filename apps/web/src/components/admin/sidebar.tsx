@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { redirect, usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { authClient } from "@/lib/auth-client";
 
 const sidebarItems = [
     {
@@ -49,6 +50,21 @@ const sidebarItems = [
 export function AdminSidebar() {
     const pathname = usePathname();
     const [isOpen, setIsOpen] = useState(false);
+    const [signingOut, setSigningOut] = useState(false);
+
+
+    const signOut = async () => {
+        setSigningOut(true);
+        await authClient.signOut({
+            fetchOptions: {
+                onSuccess: () => {
+                    redirect("/login"); // redirect to login page
+                },
+            },
+        });
+        setSigningOut(false);
+    }
+
 
     const SidebarContent = () => (
         <div className="flex flex-col h-full bg-card border-r">
@@ -83,7 +99,7 @@ export function AdminSidebar() {
                 })}
             </div>
             <div className="p-4 border-t">
-                <Button variant="ghost" className="w-full justify-start gap-3 text-muted-foreground hover:text-red-600 hover:bg-red-50" onClick={() => {/* Sign out logic */ }}>
+                <Button variant="ghost" className="cursor-pointer w-full justify-start gap-3 text-muted-foreground hover:text-red-600 hover:bg-red-50" onClick={signOut} disabled={signingOut}>
                     <LogOut className="h-4 w-4" />
                     Sign Out
                 </Button>

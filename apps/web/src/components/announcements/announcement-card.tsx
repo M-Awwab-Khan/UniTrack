@@ -5,15 +5,20 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { GlobalAnnouncement } from "./mock-data";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, UserCircle, AlertCircle, Paperclip } from "lucide-react";
+import { Calendar, UserCircle, AlertCircle, Paperclip, Pencil, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
+
 
 interface AnnouncementCardProps {
     announcement: GlobalAnnouncement;
     onClick: () => void;
+    canEdit?: boolean;
+    onEdit?: (e: React.MouseEvent) => void;
+    onDelete?: (e: React.MouseEvent) => void;
 }
 
-export function AnnouncementCard({ announcement, onClick }: AnnouncementCardProps) {
+export function AnnouncementCard({ announcement, onClick, canEdit, onEdit, onDelete }: AnnouncementCardProps) {
     const isImportant = announcement.priority === 'Important';
 
     return (
@@ -28,6 +33,34 @@ export function AnnouncementCard({ announcement, onClick }: AnnouncementCardProp
                 isImportant && "border-l-4 border-l-red-500 shadow-red-100/50"
             )}
         >
+            {/* TA Actions */}
+            {canEdit && (
+                <div className="absolute top-2 right-2 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-background/50 rounded-md p-0.5">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-primary"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onEdit?.(e);
+                        }}
+                    >
+                        <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-red-500"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete?.(e);
+                        }}
+                    >
+                        <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                </div>
+            )}
+
             <div className="flex flex-col gap-3">
                 {/* Header */}
                 <div className="flex items-start justify-between gap-4">

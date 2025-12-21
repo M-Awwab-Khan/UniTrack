@@ -3,34 +3,22 @@
 import Link from "next/link";
 import {
     Bell,
-    CircleUser,
     Menu,
     Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { DashboardSidebar } from "./sidebar";
 import { VisuallyHidden } from "radix-ui";
+import { UserProfileDropdown } from "../user-menu";
 
 export function TopNav() {
     const router = useRouter();
-    const { data: session } = authClient.useSession();
-
-    const handleSignOut = async () => {
-        await authClient.signOut();
-        router.push("/login");
-    };
+    // const { data: session } = authClient.useSession(); // UserProfileDropdown handles fetching, or we can fetch if needed for other things. 
+    // TopNav currently doesn't use session for anything else inside.
 
     return (
         <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
@@ -65,22 +53,7 @@ export function TopNav() {
                 <Bell className="h-5 w-5" />
                 <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-background" />
             </Button>
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="secondary" size="icon" className="rounded-full">
-                        <CircleUser className="h-5 w-5" />
-                        <span className="sr-only">Toggle user menu</span>
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem>Settings</DropdownMenuItem>
-                    <DropdownMenuItem>Support</DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleSignOut} className="text-red-500 cursor-pointer">Logout</DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
+            <UserProfileDropdown />
         </header>
     );
 }

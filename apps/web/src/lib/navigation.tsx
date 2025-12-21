@@ -10,16 +10,17 @@ import {
     Settings,
     Shield
 } from "lucide-react";
+import type { Route } from "next";
 import React from "react";
 
 export type NavRoute = {
     id: string;
     title: string;
     icon: React.ReactNode;
-    link: string;
+    link: Route | string;
     subs?: {
         title: string;
-        link: string;
+        link: Route | string;
         icon?: React.ReactNode;
     }[];
 };

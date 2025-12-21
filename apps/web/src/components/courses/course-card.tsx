@@ -107,7 +107,7 @@ export function CourseCard({ course }: CourseCardProps) {
 
                 <CardFooter className="pt-2">
                     <Button variant="ghost" className="w-full text-xs h-8 text-muted-foreground hover:text-primary" asChild>
-                        <Link href={`/dashboard/courses/${course.id}`}>
+                        <Link href={`/dashboard/courses/${course.id}` as any}>
                             View Course Details
                         </Link>
                     </Button>

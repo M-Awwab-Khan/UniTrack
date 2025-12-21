@@ -16,23 +16,24 @@ import {
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import Link from "next/link";
+import Link, { type LinkProps } from "next/link";
+import type { Route as NextRoute } from "next";
 import type React from "react";
 import { useState } from "react";
 
-export type Route = {
+export type SidebarRoute = {
   id: string;
   title: string;
   icon?: React.ReactNode;
-  link: string;
+  link: NextRoute | string;
   subs?: {
     title: string;
-    link: string;
+    link: NextRoute | string;
     icon?: React.ReactNode;
   }[];
 };
 
-export default function DashboardNavigation({ routes }: { routes: Route[] }) {
+export default function DashboardNavigation({ routes }: { routes: SidebarRoute[] }) {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
   const [openCollapsible, setOpenCollapsible] = useState<string | null>(null);
@@ -91,7 +92,7 @@ export default function DashboardNavigation({ routes }: { routes: Route[] }) {
                         >
                           <SidebarMenuSubButton asChild>
                             <Link
-                              href={subRoute.link}
+                              href={subRoute.link as any}
                               prefetch={true}
                               className="flex items-center rounded-md px-4 py-1.5 text-sm font-medium text-muted-foreground hover:bg-sidebar-muted hover:text-foreground"
                             >
@@ -107,7 +108,7 @@ export default function DashboardNavigation({ routes }: { routes: Route[] }) {
             ) : (
               <SidebarMenuButton tooltip={route.title} asChild>
                 <Link
-                  href={route.link}
+                  href={route.link as any}
                   prefetch={true}
                   className={cn(
                     "flex items-center rounded-lg px-2 transition-colors text-muted-foreground hover:bg-sidebar-muted hover:text-foreground",

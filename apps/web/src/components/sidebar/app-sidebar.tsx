@@ -62,7 +62,7 @@ export function AppSidebar({ className, ...props }: React.ComponentProps<typeof 
         </motion.div>
       </SidebarHeader>
       <SidebarContent className="gap-4 px-2 py-4">
-        <DashboardNavigation routes={routes as any} />
+        <DashboardNavigation routes={routes} />
       </SidebarContent>
       <SidebarFooter className="!p-0 px-2 !pb-4">
         {/* We can put user info here or keep it empty for now as requested UI consistency is main goal */}

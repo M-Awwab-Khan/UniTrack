@@ -1,36 +1,17 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { create } from "zustand";
 
-let isOpen = false;
-const listeners = new Set<() => void>();
-
-export const notificationStore = {
-    getSnapshot: () => isOpen,
-    subscribe: (listener: () => void) => {
-        listeners.add(listener);
-        return () => listeners.delete(listener);
-    },
-    setIsOpen: (value: boolean) => {
-        isOpen = value;
-        listeners.forEach((l) => l());
-    },
-    toggle: () => {
-        isOpen = !isOpen;
-        listeners.forEach((l) => l());
-    },
-};
-
-export function useNotificationStore() {
-    const isDrawerOpen = useSyncExternalStore(
-        notificationStore.subscribe,
-        notificationStore.getSnapshot
-    );
-
-    return {
-        isOpen: isDrawerOpen,
-        setIsOpen: notificationStore.setIsOpen,
-        toggle: notificationStore.toggle,
-    };
+interface NotificationState {
+    isOpen: boolean;
+    setIsOpen: (isOpen: boolean) => void;
+    toggle: () => void;
 }
+
+export const useNotificationStore = create<NotificationState>((set) => ({
+    isOpen: false,
+    setIsOpen: (isOpen) => set({ isOpen }),
+    toggle: () => set((state) => ({ isOpen: !state.isOpen })),
+}));
+
 

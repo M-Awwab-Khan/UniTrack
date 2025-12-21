@@ -1,5 +1,5 @@
-import { AdminSidebar } from "@/components/admin/sidebar";
-import { Toaster } from "@/components/ui/sonner";
+import { AppSidebar } from "@/components/sidebar/app-sidebar";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { auth } from "@uni-track/auth"
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -18,15 +18,21 @@ export default async function AdminLayout({
         redirect("/");
     } else {
         return (
-            <div className="min-h-screen bg-muted/20">
-                <AdminSidebar />
-                <main className="md:ml-64 min-h-screen">
-                    <div className="container py-6 md:py-10 max-w-7xl mx-auto px-4 md:px-8">
-                        {children}
-                    </div>
-                </main>
-                <Toaster />
-            </div>
+            <SidebarProvider>
+                <AppSidebar />
+                <SidebarInset className="bg-muted/20 min-h-screen flex flex-col">
+                    <header className="flex h-16 shrink-0 items-center gap-2 px-4 border-b bg-background md:hidden">
+                        <SidebarTrigger className="-ml-1" />
+                        <span className="font-semibold px-2">Admin Panel</span>
+                    </header>
+                    <main className="flex-1 overflow-auto py-6 md:py-10">
+                        <div className="container max-w-7xl mx-auto px-4 md:px-8">
+                            {children}
+                        </div>
+                    </main>
+                </SidebarInset>
+            </SidebarProvider>
         );
     }
 }
+

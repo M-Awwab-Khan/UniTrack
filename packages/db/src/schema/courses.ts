@@ -1,6 +1,8 @@
 import { pgTable, text, timestamp, integer, pgEnum, uuid } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { taInviteCourses, courseTas } from "./ta-invites";
+import { assignments } from "./assignments";
+import { courseStudents } from "./course-students";
 
 export const courseStatusEnum = pgEnum("course_status", ["active", "archived"]);
 
@@ -19,4 +21,6 @@ export const courses = pgTable("courses", {
 export const coursesRelations = relations(courses, ({ many }) => ({
     taInviteCourses: many(taInviteCourses),
     courseTas: many(courseTas),
+    courseStudents: many(courseStudents),
+    assignments: many(assignments),
 }));

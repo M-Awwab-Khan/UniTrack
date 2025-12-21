@@ -1,8 +1,8 @@
 import { router, protectedProcedure } from "../index";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { db, taInvites, taInviteCourses, taPermissions, courses, user, semesters, timetableTemplates, academicEvents } from "@uni-track/db";
-import { eq, desc } from "drizzle-orm";
+import { db, taInvites, taInviteCourses, taPermissions, courses, user, semesters, timetableTemplates, academicEvents, courseEnrollmentCodes } from "@uni-track/db";
+import { eq, desc, and } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 // Admin middleware - ensures user is an admin
@@ -502,4 +502,85 @@ export const adminRouter = router({
                 return { success: true };
             }),
     }),
+
+    // Enrollment Codes Management
+    enrollmentCodes: router({
+        // List codes (optionally filter by course)
+        list: adminProcedure
+            .input(z.object({ courseId: z.string().optional() }))
+            .query(async ({ input }) => {
+                const whereClause = input.courseId
+                    ? (cec: any, { eq }: any) => eq(cec.courseId, input.courseId)
+                    : undefined;
+
+                const codes = await db.query.courseEnrollmentCodes.findMany({
+                    where: whereClause,
+                    orderBy: (cec, { desc }) => [desc(cec.createdAt)],
+                    with: {
+                        course: {
+                            columns: { name: true, code: true }
+                        },
+                        createdBy: {
+                            columns: { name: true }
+                        }
+                    }
+                });
+                return codes;
+            }),
+
+        // Generate Code
+        generate: adminProcedure
+            .input(z.object({
+                courseId: z.string().uuid(),
+                expiresAt: z.coerce.date().optional(),
+                maxUses: z.number().int().positive().optional(),
+            }))
+            .mutation(async ({ ctx, input }) => {
+                // 1. Deactivate existing active codes?
+                // Policy: "Only one active code per course"
+                await db.update(courseEnrollmentCodes)
+                    .set({ isActive: false })
+                    .where(and(
+                        eq(courseEnrollmentCodes.courseId, input.courseId),
+                        eq(courseEnrollmentCodes.isActive, true)
+                    ));
+
+                // 2. Generate new code
+                // Format: SE-OS-XXXX (Department-CourseCode-Random)
+                // Need to fetch course details for prefix
+                const course = await db.query.courses.findFirst({
+                    where: (c, { eq }) => eq(c.id, input.courseId),
+                    columns: { code: true, department: true }
+                });
+
+                if (!course) throw new TRPCError({ code: "NOT_FOUND", message: "Course not found" });
+
+                const randomPart = nanoid(5).toUpperCase();
+                // Simple code: CODE-RANDOM (e.g. CS101-X9K2P)
+                const code = `${course.code}-${randomPart}`.toUpperCase();
+
+                // 3. Insert
+                const [newCode] = await db.insert(courseEnrollmentCodes).values({
+                    courseId: input.courseId,
+                    code: code,
+                    isActive: true,
+                    expiresAt: input.expiresAt,
+                    maxUses: input.maxUses,
+                    createdByAdminId: ctx.session.user.id,
+                }).returning();
+
+                return newCode;
+            }),
+
+        // Revoke Code
+        revoke: adminProcedure
+            .input(z.object({ id: z.string().uuid() }))
+            .mutation(async ({ input }) => {
+                await db.update(courseEnrollmentCodes)
+                    .set({ isActive: false })
+                    .where(eq(courseEnrollmentCodes.id, input.id));
+                return { success: true };
+            }),
+    }),
 });
+

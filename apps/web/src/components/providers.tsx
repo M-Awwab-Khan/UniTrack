@@ -11,6 +11,7 @@ import {
 import type { AppRouter } from "@uni-track/api/routers/index";
 import { useState } from "react";
 import { createQueryClient } from "@/utils/query-client";
+import { NotificationObserver } from "./notifications/notification-observer";
 
 let clientQueryClientSingleton: QueryClient | undefined = undefined;
 
@@ -50,6 +51,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 			<QueryClientProvider client={queryClient}>
 				<TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
 					{children}
+					<NotificationObserver />
 					<ReactQueryDevtools />
 				</TRPCProvider>
 			</QueryClientProvider>

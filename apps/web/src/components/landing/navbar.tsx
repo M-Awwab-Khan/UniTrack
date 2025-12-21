@@ -7,6 +7,7 @@ import { ModeToggle } from "@/components/mode-toggle";
 import { UserProfileDropdown } from "@/components/user-menu";
 import { authClient } from "@/lib/auth-client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 export function Navbar() {
     const { data: session, isPending } = authClient.useSession();
@@ -32,7 +33,10 @@ export function Navbar() {
                     {isPending ? (
                         <Skeleton className="h-9 w-20 rounded-md" />
                     ) : session ? (
-                        <UserProfileDropdown />
+                        <>
+                            <NotificationBell />
+                            <UserProfileDropdown />
+                        </>
                     ) : (
                         <>
                             <Link href="/login" >

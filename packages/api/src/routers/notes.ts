@@ -1,8 +1,9 @@
 import { router, protectedProcedure } from "../index";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { db, notes, noteTypeEnum } from "@uni-track/db";
+import { courseStudents, db, notes, noteTypeEnum } from "@uni-track/db";
 import { eq } from "drizzle-orm";
+import { createNotification } from "../lib/notifications";
 
 // Helper to check if TA is assigned to the course
 const isTaAssignedToCourse = async (userId: string, courseId: string) => {
@@ -76,7 +77,7 @@ export const notesRouter = router({
                 });
             }
 
-            await db.insert(notes).values({
+            const note = await db.insert(notes).values({
                 title: input.title,
                 description: input.description,
                 courseId: input.courseId,
@@ -84,8 +85,21 @@ export const notesRouter = router({
                 fileUrl: input.fileUrl,
                 week: input.week,
                 createdBy: ctx.session.user.id,
+            }).returning();
+
+            // Notify Students
+            const students = await db.query.courseStudents.findMany({
+                where: eq(courseStudents.courseId, input.courseId),
             });
 
+            await createNotification({
+                userId: students.map((student) => student.userId),
+                title: "Note Added",
+                message: `Note has been added for ${input.courseId}`,
+                type: "note",
+                entityType: "note",
+                entityId: note[0]?.id,
+            });
             return { success: true };
         }),
 

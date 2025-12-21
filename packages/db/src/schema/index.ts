@@ -6,4 +6,7 @@ export * from "./announcements";
 export * from "./notes";
 export * from "./timetable";
 export * from "./settings";
+export * from "./notifications";
+export * from "./course-students";
+export * from "./course-enrollment-codes";
 export { };

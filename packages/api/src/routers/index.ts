@@ -10,6 +10,7 @@ import { taRouter } from "./ta";
 import { timetableRouter } from "./timetable";
 import { profileRouter } from "./profile";
 import { settingsRouter } from "./settings";
+import { notificationsRouter } from "./notifications";
 
 export const appRouter = router({
 	healthCheck: publicProcedure.query(() => "ok"),
@@ -25,5 +26,6 @@ export const appRouter = router({
 	timetable: timetableRouter,
 	profile: profileRouter,
 	settings: settingsRouter,
+	notifications: notificationsRouter,
 });
 export type AppRouter = typeof appRouter;

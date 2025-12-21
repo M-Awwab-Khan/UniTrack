@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { DashboardSidebar } from "./sidebar";
 import { VisuallyHidden } from "radix-ui";
 import { UserProfileDropdown } from "../user-menu";
+import { NotificationBell } from "../notifications/notification-bell";
 
 export function TopNav() {
     const router = useRouter();
@@ -49,10 +50,7 @@ export function TopNav() {
                     className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[320px]"
                 />
             </div>
-            <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5" />
-                <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-background" />
-            </Button>
+            <NotificationBell />
             <UserProfileDropdown />
         </header>
     );

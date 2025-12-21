@@ -1,8 +1,9 @@
 import { router, protectedProcedure } from "../index";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { db, announcements, priorityEnum } from "@uni-track/db";
+import { db, announcements, priorityEnum, courseStudents } from "@uni-track/db";
 import { eq } from "drizzle-orm";
+import { createNotification } from "../lib/notifications";
 
 // Helper to check if TA is assigned to the course
 const isTaAssignedToCourse = async (userId: string, courseId: string) => {
@@ -75,12 +76,32 @@ export const announcementsRouter = router({
                 });
             }
 
-            await db.insert(announcements).values({
+            const announcement = await db.insert(announcements).values({
                 title: input.title,
                 content: input.content,
                 courseId: input.courseId,
                 priority: input.priority,
                 createdBy: ctx.session.user.id,
+            }).returning();
+
+            if (!announcement) {
+                throw new TRPCError({
+                    code: "INTERNAL_SERVER_ERROR",
+                    message: "Announcement could not be created",
+                });
+            }
+            // Notify Students
+            const students = await db.query.courseStudents.findMany({
+                where: eq(courseStudents.courseId, input.courseId),
+            });
+
+            await createNotification({
+                userId: students.map((student) => student.userId),
+                title: "Announcement Created",
+                message: `Announcement ${input.title} has been created`,
+                type: "announcement",
+                entityType: "announcement",
+                entityId: announcement[0]?.id,
             });
 
             return { success: true };

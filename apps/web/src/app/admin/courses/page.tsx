@@ -4,8 +4,9 @@ import { useState } from "react";
 import { CreateCourseForm } from "@/components/admin/courses/create-course-form";
 import { CoursesTable } from "@/components/admin/courses/courses-table";
 import { useQueryClient } from "@tanstack/react-query";
-import { BookOpen, Plus } from "lucide-react";
+import { BookOpen, Plus, Key } from "lucide-react";
 import { useTRPC } from "@/utils/trpc";
+import Link from "next/link";
 import {
     Dialog,
     DialogContent,
@@ -38,26 +39,34 @@ export default function AdminCoursesPage() {
                     </p>
                 </div>
 
-                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                    <DialogTrigger asChild>
-                        <Button className="gap-2">
-                            <Plus className="h-4 w-4" />
-                            Create Course
+                <div className="flex items-center gap-2">
+                    <Link href={"/admin/courses/enrollment-codes" as any}>
+                        <Button variant="outline" className="gap-2">
+                            <Key className="h-4 w-4" />
+                            Enrollment Codes
                         </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[600px]">
-                        <DialogHeader>
-                            <DialogTitle>Create New Course</DialogTitle>
-                            <DialogDescription>
-                                Add a new course to the system. Fill in all the details below.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <CreateCourseForm
-                            onSuccess={handleCourseCreated}
-                            onCancel={() => setIsDialogOpen(false)}
-                        />
-                    </DialogContent>
-                </Dialog>
+                    </Link>
+                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                        <DialogTrigger asChild>
+                            <Button className="gap-2">
+                                <Plus className="h-4 w-4" />
+                                Create Course
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[600px]">
+                            <DialogHeader>
+                                <DialogTitle>Create New Course</DialogTitle>
+                                <DialogDescription>
+                                    Add a new course to the system. Fill in all the details below.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <CreateCourseForm
+                                onSuccess={handleCourseCreated}
+                                onCancel={() => setIsDialogOpen(false)}
+                            />
+                        </DialogContent>
+                    </Dialog>
+                </div>
             </div>
 
             <div className="space-y-4">
@@ -66,6 +75,6 @@ export default function AdminCoursesPage() {
                 </div>
                 <CoursesTable />
             </div>
-        </div>
+        </div >
     );
 }

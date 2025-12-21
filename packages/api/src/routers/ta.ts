@@ -1,8 +1,9 @@
 import { router, protectedProcedure } from "../index";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { db, classSessions } from "@uni-track/db";
+import { db, classSessions, courseStudents } from "@uni-track/db";
 import { eq } from "drizzle-orm";
+import { createNotification } from "../lib/notifications";
 
 // TA middleware - ensures user is a TA
 const taProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -55,6 +56,20 @@ export const taRouter = router({
                     createdByUserId: ctx.session.user.id,
                 })
                 .returning();
+
+            // Notify Students
+            const students = await db.query.courseStudents.findMany({
+                where: eq(courseStudents.courseId, input.courseId),
+            });
+
+            await createNotification({
+                userId: students.map((student) => student.userId),
+                title: "Extra Class Added",
+                message: `Extra class has been added for ${input.courseId}`,
+                type: "timetable",
+                entityType: "timetable",
+                entityId: newClass?.id,
+            });
             return newClass;
         }),
 
@@ -71,7 +86,7 @@ export const taRouter = router({
                 location: z.string().optional(),
             })
         )
-        .mutation(async ({ ctx, input }) => {
+        .mutation(async ({ input }) => {
             const { sessionId, action } = input;
 
             if (action === "cancel") {
@@ -84,6 +99,20 @@ export const taRouter = router({
                     })
                     .where(eq(classSessions.id, sessionId))
                     .returning();
+
+                // Notify Students
+                const students = await db.query.courseStudents.findMany({
+                    where: eq(courseStudents.courseId, updated?.courseId as string),
+                });
+
+                await createNotification({
+                    userId: students.map((student) => student.userId),
+                    title: "Class Cancelled",
+                    message: `Class has been cancelled for ${updated?.courseId}`,
+                    type: "timetable",
+                    entityType: "timetable",
+                    entityId: updated?.id,
+                });
                 return updated;
             } else if (action === "reschedule") {
                 if (!input.newDate || !input.newStartTime || !input.newEndTime) {
@@ -101,6 +130,20 @@ export const taRouter = router({
                     })
                     .where(eq(classSessions.id, sessionId))
                     .returning();
+
+                // Notify Students
+                const students = await db.query.courseStudents.findMany({
+                    where: eq(courseStudents.courseId, updated?.courseId as string),
+                });
+
+                await createNotification({
+                    userId: students.map((student) => student.userId),
+                    title: "Class Rescheduled",
+                    message: `Class has been rescheduled for ${updated?.courseId}`,
+                    type: "timetable",
+                    entityType: "timetable",
+                    entityId: updated?.id,
+                });
                 return updated;
             }
         }),

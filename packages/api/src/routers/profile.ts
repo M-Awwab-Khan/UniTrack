@@ -1,6 +1,6 @@
 import { router, protectedProcedure } from "../index";
 import { z } from "zod";
-import { db, user, studentProfile, taProfile, teacherProfile, adminProfile, roleEnum } from "@uni-track/db";
+import { db, user, studentProfile } from "@uni-track/db";
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 

@@ -1,8 +1,9 @@
 import { router, protectedProcedure } from "../index";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { db, assignments, assignmentTypeEnum, courses, courseTas } from "@uni-track/db";
+import { db, assignments, assignmentTypeEnum, courseStudents } from "@uni-track/db";
 import { eq } from "drizzle-orm";
+import { createNotification } from "../lib/notifications";
 
 // Helper to check if TA is assigned to the course
 const isTaAssignedToCourse = async (userId: string, courseId: string) => {
@@ -12,8 +13,23 @@ const isTaAssignedToCourse = async (userId: string, courseId: string) => {
     return !!assignment;
 };
 
+// Helper to notify (Simulating broadcast to students by notifying creator for demo)
+const notifyNewAssignment = async (title: string, courseId: string, entityId: string) => {
+    const students = await db.query.courseStudents.findMany({
+        where: eq(courseStudents.courseId, courseId),
+    });
+    await createNotification({
+        userId: students.map((student) => student.userId),
+        title: `New Assignment: ${title}`,
+        message: `An assignment has been created. (This would normally notify all students in course ${courseId})`,
+        type: "assignment",
+        entityType: "assignment",
+        entityId,
+        priority: "normal"
+    });
+};
+
 // TA Procedure: Checks role and course assignment
-// Note: We perform the course check inside the mutation because we need the input courseId
 const taProcedure = protectedProcedure.use(async ({ ctx, next }) => {
     if (ctx.session.user.role !== "ta") {
         throw new TRPCError({
@@ -26,13 +42,7 @@ const taProcedure = protectedProcedure.use(async ({ ctx, next }) => {
 
 export const assignmentsRouter = router({
     // Get All Assignments (Accessible by Students and TAs)
-    getAll: protectedProcedure.query(async ({ ctx }) => {
-        // In a real app, we might filter by user's enrolled courses.
-        // For now, returning all assignments or filtering could be an input option.
-        // Let's return all for simplicity as per current mock behavior, 
-        // or better, fetch assignments for courses the user is related to?
-        // The mock data showed global assignments. Let's fetch all with course details.
-
+    getAll: protectedProcedure.query(async () => {
         const items = await db.query.assignments.findMany({
             with: {
                 course: true,
@@ -86,7 +96,7 @@ export const assignmentsRouter = router({
                 });
             }
 
-            await db.insert(assignments).values({
+            const [newAssignment] = await db.insert(assignments).values({
                 title: input.title,
                 description: input.description,
                 courseId: input.courseId,
@@ -94,7 +104,12 @@ export const assignmentsRouter = router({
                 dueDate: new Date(input.dueDate),
                 instructions: input.instructions,
                 createdBy: ctx.session.user.id,
-            });
+            }).returning();
+
+            // Trigger Notification (Notify Creator for Demo)
+            if (newAssignment) {
+                await notifyNewAssignment(input.title, input.courseId, newAssignment.id);
+            }
 
             return { success: true };
         }),
@@ -140,6 +155,22 @@ export const assignmentsRouter = router({
                 })
                 .where(eq(assignments.id, input.id));
 
+            // Notify Update
+            // TODO: Notify students
+
+            const students = await db.query.courseStudents.findMany({
+                where: eq(courseStudents.courseId, existing.courseId),
+            });
+
+            await createNotification({
+                userId: students.map((student) => student.userId),
+                title: "Assignment Updated",
+                message: `Assignment ${input.title} has been updated`,
+                type: "assignment",
+                entityType: "assignment",
+                entityId: input.id,
+            });
+
             return { success: true };
         }),
 
@@ -166,6 +197,21 @@ export const assignmentsRouter = router({
             }
 
             await db.delete(assignments).where(eq(assignments.id, input.id));
+
+
+            // Notify Students
+            const students = await db.query.courseStudents.findMany({
+                where: eq(courseStudents.courseId, existing.courseId),
+            });
+
+            await createNotification({
+                userId: students.map((student) => student.userId),
+                title: "Assignment Deleted",
+                message: `Assignment ${existing.title} has been deleted`,
+                type: "assignment",
+                entityType: "assignment",
+                entityId: input.id,
+            });
 
             return { success: true };
         }),

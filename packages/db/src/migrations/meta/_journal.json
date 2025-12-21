@@ -43,6 +43,13 @@
       "when": 1766280617182,
       "tag": "0005_grey_mauler",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1766284737382,
+      "tag": "0006_fancy_scorpion",
+      "breakpoints": true
     }
   ]
 }

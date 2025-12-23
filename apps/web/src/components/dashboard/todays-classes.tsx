@@ -62,7 +62,7 @@ export function TodaysClasses() {
                             transition={{ delay: 0.2 + index * 0.1 }}
                             className="flex flex-col gap-3 p-4 rounded-xl border bg-white dark:bg-zinc-900/50 shadow-sm relative overflow-hidden"
                         >
-                            <div className={`absolute left-0 top-0 bottom-0 w-1 ${cls.type === 'online' ? 'bg-indigo-500' : 'bg-emerald-500'}`} />
+                            <div className={`absolute left-0 top-0 bottom-0 w-1 bg-emerald-500`} />
                             <div className="flex justify-between items-start">
                                 <div>
                                     <h3 className="font-semibold">{cls.courseName}</h3>
@@ -72,7 +72,7 @@ export function TodaysClasses() {
                                             <span>{formatTimeRange(cls.startTime, cls.endTime)}</span>
                                         </div>
                                         <div className="flex items-center gap-1.5">
-                                            {cls.type === 'online' ? <Video className="h-4 w-4" /> : <MapPin className="h-4 w-4" />}
+                                            <MapPin className="h-4 w-4" />
                                             <span>{cls.location}</span>
                                         </div>
                                     </div>

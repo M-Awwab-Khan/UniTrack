@@ -11,7 +11,7 @@ export default async function AuthLayout({
     })
 
     if (session && session.user) {
-        if (session.user.role === 'admin') redirect('/admin/ta-invites');
+        if (session.user.role === 'admin') redirect('/admin' as any);
         redirect("/dashboard");
     }
     return (

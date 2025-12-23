@@ -51,7 +51,7 @@ export function LoginForm() {
                         console.log(session);
 
                         if (session.data?.user?.role === "admin") {
-                            router.push("/admin/ta-invites");
+                            router.push("/admin" as any);
                         } else {
                             router.push("/dashboard");
                         }

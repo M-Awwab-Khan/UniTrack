@@ -2,7 +2,9 @@
 
 - [X] Make a profile icon (dropdown) for the user in the navbar
 - [ ] Implement global search
-- [ ] Implement global notifications
+- [ ] Implement Assignment Tracking
+- [X] Implement global notifications
 - [X] Implement profile and settings page.
-- [ ] Interate Dashboard and My courses APIs.
+- [ ] Interate Student Dashboard.
+- [X] Implement My Courses API.
 - [ ] Make Admin Dashboard.

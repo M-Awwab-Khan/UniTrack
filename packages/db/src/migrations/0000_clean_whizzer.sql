@@ -1,0 +1,372 @@
+CREATE TYPE "public"."announcement_priority" AS ENUM('Normal', 'Important');--> statement-breakpoint
+CREATE TYPE "public"."assignment_type" AS ENUM('Lab', 'Assignment', 'Quiz', 'Project', 'Presentation');--> statement-breakpoint
+CREATE TYPE "public"."role" AS ENUM('student', 'ta', 'teacher', 'admin');--> statement-breakpoint
+CREATE TYPE "public"."enrollment_status" AS ENUM('active', 'dropped', 'completed');--> statement-breakpoint
+CREATE TYPE "public"."course_status" AS ENUM('active', 'archived');--> statement-breakpoint
+CREATE TYPE "public"."invite_status" AS ENUM('active', 'used', 'expired', 'revoked');--> statement-breakpoint
+CREATE TYPE "public"."note_type" AS ENUM('PDF', 'Slides', 'Lab Manual', 'Reference', 'Link', 'Lecture Notes');--> statement-breakpoint
+CREATE TYPE "public"."academic_event_type" AS ENUM('break', 'holiday', 'exam', 'event');--> statement-breakpoint
+CREATE TYPE "public"."class_type" AS ENUM('regular', 'extra', 'compensatory');--> statement-breakpoint
+CREATE TYPE "public"."exception_type" AS ENUM('cancelled', 'rescheduled');--> statement-breakpoint
+CREATE TYPE "public"."semester_status" AS ENUM('active', 'archived');--> statement-breakpoint
+CREATE TYPE "public"."session_status" AS ENUM('scheduled', 'conducted', 'cancelled');--> statement-breakpoint
+CREATE TYPE "public"."default_page" AS ENUM('dashboard', 'assignments', 'timetable');--> statement-breakpoint
+CREATE TYPE "public"."reminder_timing" AS ENUM('3_days', '1_day', 'same_day');--> statement-breakpoint
+CREATE TYPE "public"."theme" AS ENUM('light', 'dark', 'system');--> statement-breakpoint
+CREATE TYPE "public"."time_format" AS ENUM('12h', '24h');--> statement-breakpoint
+CREATE TYPE "public"."week_start" AS ENUM('monday', 'sunday');--> statement-breakpoint
+CREATE TYPE "public"."notification_priority" AS ENUM('normal', 'important');--> statement-breakpoint
+CREATE TYPE "public"."notification_role" AS ENUM('student', 'ta', 'teacher', 'admin', 'all');--> statement-breakpoint
+CREATE TYPE "public"."notification_type" AS ENUM('assignment', 'announcement', 'timetable', 'note', 'invite', 'system');--> statement-breakpoint
+CREATE TABLE "announcements" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"title" text NOT NULL,
+	"content" text NOT NULL,
+	"course_id" uuid NOT NULL,
+	"priority" "announcement_priority" DEFAULT 'Normal' NOT NULL,
+	"created_by" text NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "assignment_submissions" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"assignment_id" uuid NOT NULL,
+	"student_id" text NOT NULL,
+	"submitted_at" timestamp DEFAULT now() NOT NULL,
+	"submission_text" text,
+	"file_url" text,
+	"is_late" boolean DEFAULT false NOT NULL,
+	"attempt_number" integer DEFAULT 1 NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "assignments" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"title" text NOT NULL,
+	"description" text NOT NULL,
+	"course_id" uuid NOT NULL,
+	"type" "assignment_type" NOT NULL,
+	"due_date" timestamp NOT NULL,
+	"instructions" text,
+	"created_by" text NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "account" (
+	"id" text PRIMARY KEY NOT NULL,
+	"account_id" text NOT NULL,
+	"provider_id" text NOT NULL,
+	"user_id" text NOT NULL,
+	"access_token" text,
+	"refresh_token" text,
+	"id_token" text,
+	"access_token_expires_at" timestamp,
+	"refresh_token_expires_at" timestamp,
+	"scope" text,
+	"password" text,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "admin_profile" (
+	"id" text PRIMARY KEY NOT NULL,
+	"user_id" text NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "session" (
+	"id" text PRIMARY KEY NOT NULL,
+	"expires_at" timestamp NOT NULL,
+	"token" text NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp NOT NULL,
+	"ip_address" text,
+	"user_agent" text,
+	"user_id" text NOT NULL,
+	CONSTRAINT "session_token_unique" UNIQUE("token")
+);
+--> statement-breakpoint
+CREATE TABLE "student_profile" (
+	"id" text PRIMARY KEY NOT NULL,
+	"user_id" text NOT NULL,
+	"roll_number" text NOT NULL,
+	"department" text NOT NULL,
+	"semester" text NOT NULL,
+	"batch" text NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "ta_profile" (
+	"id" text PRIMARY KEY NOT NULL,
+	"user_id" text NOT NULL,
+	"department" text NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "teacher_profile" (
+	"id" text PRIMARY KEY NOT NULL,
+	"user_id" text NOT NULL,
+	"department" text NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "user" (
+	"id" text PRIMARY KEY NOT NULL,
+	"name" text NOT NULL,
+	"email" text NOT NULL,
+	"email_verified" boolean DEFAULT false NOT NULL,
+	"image" text,
+	"role" "role" DEFAULT 'student' NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "user_email_unique" UNIQUE("email")
+);
+--> statement-breakpoint
+CREATE TABLE "verification" (
+	"id" text PRIMARY KEY NOT NULL,
+	"identifier" text NOT NULL,
+	"value" text NOT NULL,
+	"expires_at" timestamp NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "course_enrollment_codes" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"course_id" uuid NOT NULL,
+	"code" text NOT NULL,
+	"is_active" boolean DEFAULT true NOT NULL,
+	"max_uses" integer,
+	"uses" integer DEFAULT 0 NOT NULL,
+	"expires_at" timestamp,
+	"created_by_admin_id" text,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "course_enrollment_codes_code_unique" UNIQUE("code")
+);
+--> statement-breakpoint
+CREATE TABLE "course_students" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"course_id" uuid NOT NULL,
+	"user_id" text NOT NULL,
+	"enrolled_at" timestamp DEFAULT now() NOT NULL,
+	"status" "enrollment_status" DEFAULT 'active' NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "courses" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"code" text NOT NULL,
+	"name" text NOT NULL,
+	"description" text,
+	"department" text NOT NULL,
+	"semester" text,
+	"credit_hours" integer,
+	"status" "course_status" DEFAULT 'active' NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "courses_code_unique" UNIQUE("code")
+);
+--> statement-breakpoint
+CREATE TABLE "course_tas" (
+	"ta_id" text NOT NULL,
+	"course_id" uuid NOT NULL,
+	"assigned_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "course_tas_ta_id_course_id_pk" PRIMARY KEY("ta_id","course_id")
+);
+--> statement-breakpoint
+CREATE TABLE "ta_invite_courses" (
+	"invite_id" uuid NOT NULL,
+	"course_id" uuid NOT NULL,
+	CONSTRAINT "ta_invite_courses_invite_id_course_id_pk" PRIMARY KEY("invite_id","course_id")
+);
+--> statement-breakpoint
+CREATE TABLE "ta_invites" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"full_name" text NOT NULL,
+	"email" text NOT NULL,
+	"department" text NOT NULL,
+	"invite_code" text NOT NULL,
+	"created_by_admin_id" text NOT NULL,
+	"expires_at" timestamp NOT NULL,
+	"used_at" timestamp,
+	"status" "invite_status" DEFAULT 'active' NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "ta_invites_invite_code_unique" UNIQUE("invite_code")
+);
+--> statement-breakpoint
+CREATE TABLE "ta_permissions" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"invite_id" uuid NOT NULL,
+	"permission" text NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "notes" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"title" text NOT NULL,
+	"description" text,
+	"course_id" uuid NOT NULL,
+	"type" "note_type" NOT NULL,
+	"file_url" text NOT NULL,
+	"week" text,
+	"created_by" text NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "academic_events" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"title" text NOT NULL,
+	"type" "academic_event_type" NOT NULL,
+	"start_date" timestamp NOT NULL,
+	"end_date" timestamp NOT NULL,
+	"description" text,
+	"created_by_admin_id" text NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "class_exceptions" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"course_id" uuid NOT NULL,
+	"original_date" timestamp NOT NULL,
+	"type" "exception_type" NOT NULL,
+	"reason" text,
+	"new_date" timestamp,
+	"new_start_time" time,
+	"new_end_time" time,
+	"created_by_user_id" text NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "class_sessions" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"course_id" uuid NOT NULL,
+	"semester_id" uuid NOT NULL,
+	"date" timestamp NOT NULL,
+	"start_time" time NOT NULL,
+	"end_time" time NOT NULL,
+	"location" text NOT NULL,
+	"type" "class_type" DEFAULT 'regular' NOT NULL,
+	"status" "session_status" DEFAULT 'scheduled' NOT NULL,
+	"generated_from_template_id" uuid,
+	"template_date" timestamp,
+	"cancel_reason" text,
+	"note" text,
+	"created_by_user_id" text,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "extra_classes" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"course_id" uuid NOT NULL,
+	"date" timestamp NOT NULL,
+	"start_time" time NOT NULL,
+	"end_time" time NOT NULL,
+	"location" text NOT NULL,
+	"reason" text,
+	"type" "class_type" DEFAULT 'extra' NOT NULL,
+	"created_by_user_id" text NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "semesters" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"name" text NOT NULL,
+	"start_date" timestamp NOT NULL,
+	"end_date" timestamp,
+	"status" "semester_status" DEFAULT 'active' NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "timetable_templates" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"course_id" uuid NOT NULL,
+	"day_of_week" text NOT NULL,
+	"start_time" time NOT NULL,
+	"end_time" time NOT NULL,
+	"location" text NOT NULL,
+	"created_by_admin_id" text NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "notification_settings" (
+	"user_id" text PRIMARY KEY NOT NULL,
+	"assignment_reminders" boolean DEFAULT true NOT NULL,
+	"announcement_notifications" boolean DEFAULT true NOT NULL,
+	"email_notifications" boolean DEFAULT true NOT NULL,
+	"reminder_timing" "reminder_timing" DEFAULT '1_day' NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "user_preferences" (
+	"user_id" text PRIMARY KEY NOT NULL,
+	"theme" "theme" DEFAULT 'system' NOT NULL,
+	"default_page" "default_page" DEFAULT 'dashboard' NOT NULL,
+	"time_format" time_format DEFAULT '12h' NOT NULL,
+	"week_start" "week_start" DEFAULT 'monday' NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "notifications" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"user_id" text NOT NULL,
+	"title" text NOT NULL,
+	"message" text NOT NULL,
+	"type" "notification_type" NOT NULL,
+	"entity_type" text,
+	"entity_id" text,
+	"priority" "notification_priority" DEFAULT 'normal' NOT NULL,
+	"is_read" boolean DEFAULT false NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+ALTER TABLE "announcements" ADD CONSTRAINT "announcements_course_id_courses_id_fk" FOREIGN KEY ("course_id") REFERENCES "public"."courses"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "announcements" ADD CONSTRAINT "announcements_created_by_user_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "assignment_submissions" ADD CONSTRAINT "assignment_submissions_assignment_id_assignments_id_fk" FOREIGN KEY ("assignment_id") REFERENCES "public"."assignments"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "assignment_submissions" ADD CONSTRAINT "assignment_submissions_student_id_user_id_fk" FOREIGN KEY ("student_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "assignments" ADD CONSTRAINT "assignments_course_id_courses_id_fk" FOREIGN KEY ("course_id") REFERENCES "public"."courses"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "assignments" ADD CONSTRAINT "assignments_created_by_user_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."user"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "account" ADD CONSTRAINT "account_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "admin_profile" ADD CONSTRAINT "admin_profile_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "session" ADD CONSTRAINT "session_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "student_profile" ADD CONSTRAINT "student_profile_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "ta_profile" ADD CONSTRAINT "ta_profile_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "teacher_profile" ADD CONSTRAINT "teacher_profile_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "course_enrollment_codes" ADD CONSTRAINT "course_enrollment_codes_course_id_courses_id_fk" FOREIGN KEY ("course_id") REFERENCES "public"."courses"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "course_enrollment_codes" ADD CONSTRAINT "course_enrollment_codes_created_by_admin_id_user_id_fk" FOREIGN KEY ("created_by_admin_id") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "course_students" ADD CONSTRAINT "course_students_course_id_courses_id_fk" FOREIGN KEY ("course_id") REFERENCES "public"."courses"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "course_students" ADD CONSTRAINT "course_students_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "course_tas" ADD CONSTRAINT "course_tas_ta_id_user_id_fk" FOREIGN KEY ("ta_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "course_tas" ADD CONSTRAINT "course_tas_course_id_courses_id_fk" FOREIGN KEY ("course_id") REFERENCES "public"."courses"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "ta_invite_courses" ADD CONSTRAINT "ta_invite_courses_invite_id_ta_invites_id_fk" FOREIGN KEY ("invite_id") REFERENCES "public"."ta_invites"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "ta_invite_courses" ADD CONSTRAINT "ta_invite_courses_course_id_courses_id_fk" FOREIGN KEY ("course_id") REFERENCES "public"."courses"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "ta_invites" ADD CONSTRAINT "ta_invites_created_by_admin_id_user_id_fk" FOREIGN KEY ("created_by_admin_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "ta_permissions" ADD CONSTRAINT "ta_permissions_invite_id_ta_invites_id_fk" FOREIGN KEY ("invite_id") REFERENCES "public"."ta_invites"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "notes" ADD CONSTRAINT "notes_course_id_courses_id_fk" FOREIGN KEY ("course_id") REFERENCES "public"."courses"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "notes" ADD CONSTRAINT "notes_created_by_user_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "academic_events" ADD CONSTRAINT "academic_events_created_by_admin_id_user_id_fk" FOREIGN KEY ("created_by_admin_id") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "class_exceptions" ADD CONSTRAINT "class_exceptions_course_id_courses_id_fk" FOREIGN KEY ("course_id") REFERENCES "public"."courses"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "class_exceptions" ADD CONSTRAINT "class_exceptions_created_by_user_id_user_id_fk" FOREIGN KEY ("created_by_user_id") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "class_sessions" ADD CONSTRAINT "class_sessions_course_id_courses_id_fk" FOREIGN KEY ("course_id") REFERENCES "public"."courses"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "class_sessions" ADD CONSTRAINT "class_sessions_semester_id_semesters_id_fk" FOREIGN KEY ("semester_id") REFERENCES "public"."semesters"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "class_sessions" ADD CONSTRAINT "class_sessions_generated_from_template_id_timetable_templates_id_fk" FOREIGN KEY ("generated_from_template_id") REFERENCES "public"."timetable_templates"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "class_sessions" ADD CONSTRAINT "class_sessions_created_by_user_id_user_id_fk" FOREIGN KEY ("created_by_user_id") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "extra_classes" ADD CONSTRAINT "extra_classes_course_id_courses_id_fk" FOREIGN KEY ("course_id") REFERENCES "public"."courses"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "extra_classes" ADD CONSTRAINT "extra_classes_created_by_user_id_user_id_fk" FOREIGN KEY ("created_by_user_id") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "timetable_templates" ADD CONSTRAINT "timetable_templates_course_id_courses_id_fk" FOREIGN KEY ("course_id") REFERENCES "public"."courses"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "timetable_templates" ADD CONSTRAINT "timetable_templates_created_by_admin_id_user_id_fk" FOREIGN KEY ("created_by_admin_id") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "notification_settings" ADD CONSTRAINT "notification_settings_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "user_preferences" ADD CONSTRAINT "user_preferences_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "notifications" ADD CONSTRAINT "notifications_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+CREATE UNIQUE INDEX "unique_assignment_submission" ON "assignment_submissions" USING btree ("assignment_id","student_id");--> statement-breakpoint
+CREATE INDEX "idx_submission_assignment" ON "assignment_submissions" USING btree ("assignment_id");--> statement-breakpoint
+CREATE INDEX "idx_submission_student" ON "assignment_submissions" USING btree ("student_id");--> statement-breakpoint
+CREATE INDEX "account_userId_idx" ON "account" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX "session_userId_idx" ON "session" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX "verification_identifier_idx" ON "verification" USING btree ("identifier");--> statement-breakpoint
+CREATE INDEX "idx_enrollment_code_course" ON "course_enrollment_codes" USING btree ("course_id");--> statement-breakpoint
+CREATE INDEX "idx_enrollment_code_active" ON "course_enrollment_codes" USING btree ("is_active");--> statement-breakpoint
+CREATE INDEX "idx_course_students_course" ON "course_students" USING btree ("course_id");--> statement-breakpoint
+CREATE INDEX "idx_course_students_student" ON "course_students" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX "uniq_course_student" ON "course_students" USING btree ("course_id","user_id");--> statement-breakpoint
+CREATE INDEX "ta_invites_invite_code_idx" ON "ta_invites" USING btree ("invite_code");--> statement-breakpoint
+CREATE INDEX "ta_invites_email_idx" ON "ta_invites" USING btree ("email");--> statement-breakpoint
+CREATE INDEX "ta_invites_status_idx" ON "ta_invites" USING btree ("status");--> statement-breakpoint
+CREATE INDEX "ta_permissions_invite_id_idx" ON "ta_permissions" USING btree ("invite_id");--> statement-breakpoint
+CREATE INDEX "idx_notifications_user_is_read" ON "notifications" USING btree ("user_id","is_read");--> statement-breakpoint
+CREATE INDEX "idx_notifications_created_at" ON "notifications" USING btree ("created_at");

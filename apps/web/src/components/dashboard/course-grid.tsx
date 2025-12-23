@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function CourseOverviewGrid() {
     const trpc = useTRPC();
-    const { data: courses, isLoading } = useQuery(trpc.dashboard.getCourses.queryOptions());
+    const { data: courses, isLoading } = useQuery(trpc.studentDashboard.getMyCourses.queryOptions());
 
     if (isLoading) {
         return (

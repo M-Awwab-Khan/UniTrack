@@ -9,7 +9,21 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function TodaysClasses() {
     const trpc = useTRPC();
-    const { data: classes, isLoading } = useQuery(trpc.dashboard.getTodaysClasses.queryOptions());
+    const { data: classes, isLoading } = useQuery(trpc.studentDashboard.getTodaysClasses.queryOptions());
+
+    const formatTimeRange = (start: string, end: string) => {
+        // Simple formatter if strings are HH:mm:ss
+        // Or assume they are ISO? The backend says `startTime: s.startTime`. Drizzle Time is string "HH:mm:ss".
+        // Let's just slice for HH:mm if needed or use date dummy.
+        const formatTime = (t: string) => {
+            const [h, m] = t.split(':');
+            const hour = parseInt(h);
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const showHour = hour % 12 || 12;
+            return `${showHour}:${m} ${ampm}`;
+        };
+        return `${formatTime(start)} - ${formatTime(end)}`;
+    };
 
     if (isLoading) {
         return (
@@ -51,11 +65,11 @@ export function TodaysClasses() {
                             <div className={`absolute left-0 top-0 bottom-0 w-1 ${cls.type === 'online' ? 'bg-indigo-500' : 'bg-emerald-500'}`} />
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <h3 className="font-semibold">{cls.name}</h3>
+                                    <h3 className="font-semibold">{cls.courseName}</h3>
                                     <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                                         <div className="flex items-center gap-1.5">
                                             <Clock className="h-4 w-4" />
-                                            <span>{cls.time}</span>
+                                            <span>{formatTimeRange(cls.startTime, cls.endTime)}</span>
                                         </div>
                                         <div className="flex items-center gap-1.5">
                                             {cls.type === 'online' ? <Video className="h-4 w-4" /> : <MapPin className="h-4 w-4" />}

@@ -8,6 +8,11 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({ userName }: DashboardHeaderProps) {
     const today = new Date();
+    const curHr = today.getHours();
+    let greeting = "Good Morning";
+    if (curHr >= 12 && curHr < 17) greeting = "Good Afternoon";
+    else if (curHr >= 17) greeting = "Good Evening";
+
     const options: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     const formattedDate = today.toLocaleDateString('en-US', options);
 
@@ -19,7 +24,7 @@ export function DashboardHeader({ userName }: DashboardHeaderProps) {
             className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4"
         >
             <div>
-                <h1 className="text-3xl font-bold tracking-tight">Good Morning, {userName} 👋</h1>
+                <h1 className="text-3xl font-bold tracking-tight">{greeting}, {userName} 👋</h1>
                 <p className="text-muted-foreground mt-1">Here&apos;s what&apos;s happening today.</p>
             </div>
             <div className="bg-white dark:bg-zinc-900 border px-4 py-2 rounded-lg shadow-sm">

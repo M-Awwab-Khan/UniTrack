@@ -6,9 +6,11 @@ import { useTRPC } from "@/utils/trpc";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 
+import { formatDistanceToNow } from "date-fns";
+
 export function RecentAnnouncements() {
     const trpc = useTRPC();
-    const { data: announcements, isLoading } = useQuery(trpc.dashboard.getRecentAnnouncements.queryOptions());
+    const { data: announcements, isLoading } = useQuery(trpc.studentDashboard.getRecentAnnouncements.queryOptions());
 
     if (isLoading) {
         return (
@@ -42,6 +44,11 @@ export function RecentAnnouncements() {
                 <button className="text-sm text-muted-foreground hover:text-primary transition-colors">View all</button>
             </div>
             <div className="grid gap-3">
+                {announcements?.length === 0 && (
+                    <div className="p-8 text-center text-muted-foreground text-sm">
+                        No recent announcements.
+                    </div>
+                )}
                 {announcements?.map((announcement, index) => (
                     <motion.div
                         key={announcement.id}
@@ -51,8 +58,10 @@ export function RecentAnnouncements() {
                         className="group flex flex-col gap-1 p-4 rounded-xl border bg-white dark:bg-zinc-900/50 hover:bg-muted/50 transition-all cursor-pointer"
                     >
                         <div className="flex justify-between items-start">
-                            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{announcement.course}</span>
-                            <span className="text-xs text-muted-foreground">{announcement.date}</span>
+                            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{announcement.courseName}</span>
+                            <span className="text-xs text-muted-foreground">
+                                {formatDistanceToNow(new Date(announcement.createdAt), { addSuffix: true })}
+                            </span>
                         </div>
                         <div className="flex justify-between items-center mt-1">
                             <h3 className="font-medium group-hover:text-primary transition-colors">{announcement.title}</h3>

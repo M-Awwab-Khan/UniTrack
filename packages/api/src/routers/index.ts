@@ -11,12 +11,14 @@ import { timetableRouter } from "./timetable";
 import { profileRouter } from "./profile";
 import { settingsRouter } from "./settings";
 import { notificationsRouter } from "./notifications";
+import { studentDashboardRouter } from "./student-dashboard";
 
 export const appRouter = router({
 	healthCheck: publicProcedure.query(() => "ok"),
 	privateData: protectedProcedure.query(() => "Sensitive Data"),
 	auth: authRouter,
 	dashboard: dashboardRouter,
+	studentDashboard: studentDashboardRouter,
 	admin: adminRouter,
 	assignments: assignmentsRouter,
 	announcements: announcementsRouter,

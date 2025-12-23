@@ -24,7 +24,7 @@ const item = {
 
 export function OverviewCards() {
     const trpc = useTRPC();
-    const { data: stats, isLoading } = useQuery(trpc.dashboard.getOverviewStats.queryOptions());
+    const { data: stats, isLoading } = useQuery(trpc.studentDashboard.getStats.queryOptions());
 
     const skeletonCards = Array(4).fill(0).map((_, i) => (
         <Card key={i} className="border-none shadow-sm">
@@ -49,28 +49,28 @@ export function OverviewCards() {
     const cards = [
         {
             title: "Enrolled Courses",
-            value: stats?.enrolledCourses || "0 Courses",
+            value: `${stats?.enrolledCourses ?? 0} Courses`,
             icon: BookOpen,
             color: "text-blue-500",
             bgColor: "bg-blue-500/10",
         },
         {
             title: "Upcoming Deadlines",
-            value: stats?.upcomingDeadlines || "0 Due",
+            value: `${stats?.upcomingDeadlines ?? 0} Due This Week`,
             icon: Clock,
             color: "text-orange-500",
             bgColor: "bg-orange-500/10",
         },
         {
             title: "Overdue Tasks",
-            value: stats?.overdueTasks || "0 Missed",
+            value: `${stats?.overdueTasks ?? 0} Missed`,
             icon: AlertCircle,
             color: "text-red-500",
             bgColor: "bg-red-500/10",
         },
         {
             title: "Today's Classes",
-            value: stats?.todaysClasses || "0 Classes",
+            value: `${stats?.todaysClasses ?? 0} Classes`,
             icon: Calendar,
             color: "text-green-500",
             bgColor: "bg-green-500/10",

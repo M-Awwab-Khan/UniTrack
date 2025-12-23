@@ -10,6 +10,7 @@ export const courses = pgTable("courses", {
     id: uuid("id").primaryKey().defaultRandom(),
     code: text("code").notNull().unique(), // e.g. CS301
     name: text("name").notNull(), // e.g. Operating Systems
+    instructor: text("instructor"),
     description: text("description"),
     department: text("department").notNull(), // e.g. CS
     semester: text("semester"), // e.g. Fall 2025

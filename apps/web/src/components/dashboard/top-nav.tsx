@@ -12,6 +12,7 @@ import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { UserProfileDropdown } from "../user-menu";
 import { NotificationBell } from "../notifications/notification-bell";
+import { GlobalSearch } from "../layout/global-search";
 
 export function TopNav() {
     const router = useRouter();
@@ -23,12 +24,7 @@ export function TopNav() {
                 <span className="hidden sm:inline-block">Fall Semester 2024</span>
             </div>
             <div className="relative ml-auto flex-1 md:grow-0">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                    type="search"
-                    placeholder="Search..."
-                    className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[320px]"
-                />
+                <GlobalSearch />
             </div>
             <NotificationBell />
             <UserProfileDropdown />

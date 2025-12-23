@@ -13,6 +13,7 @@ import { settingsRouter } from "./settings";
 import { notificationsRouter } from "./notifications";
 import { studentDashboardRouter } from "./student-dashboard";
 import { adminDashboardRouter } from "./admin-dashboard";
+import { searchRouter } from "./search";
 
 export const appRouter = router({
 	healthCheck: publicProcedure.query(() => "ok"),
@@ -21,6 +22,7 @@ export const appRouter = router({
 	dashboard: dashboardRouter,
 	studentDashboard: studentDashboardRouter,
 	adminDashboard: adminDashboardRouter,
+	search: searchRouter,
 	admin: adminRouter,
 	assignments: assignmentsRouter,
 	announcements: announcementsRouter,

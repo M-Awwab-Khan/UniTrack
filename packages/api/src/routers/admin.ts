@@ -1,7 +1,8 @@
-import { router, protectedProcedure } from "../index";
+import { createTRPCRouter as router, protectedProcedure } from "../trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { db, taInvites, taInviteCourses, taPermissions, courses, user, semesters, timetableTemplates, academicEvents, courseEnrollmentCodes } from "@uni-track/db";
+import { db } from "@uni-track/db";
+import { taInvites, taInviteCourses, taPermissions, courses, user, semesters, timetableTemplates, academicEvents, courseEnrollmentCodes } from "@uni-track/db/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { nanoid } from "nanoid";
 

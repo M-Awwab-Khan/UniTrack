@@ -1,5 +1,6 @@
-import { router, protectedProcedure } from "../index";
-import { db, courseEnrollmentCodes, courseStudents } from "@uni-track/db";
+import { createTRPCRouter as router, protectedProcedure } from "../trpc";
+import { db } from "@uni-track/db";
+import { courseEnrollmentCodes, courseStudents } from "@uni-track/db/schema";
 import { z } from "zod";
 import { eq, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";

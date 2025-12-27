@@ -1,6 +1,7 @@
-import { router, protectedProcedure } from "../index";
+import { createTRPCRouter as router, protectedProcedure } from "../trpc";
 import { z } from "zod";
-import { db, classSessions } from "@uni-track/db";
+import { db } from "@uni-track/db";
+import { classSessions } from "@uni-track/db/schema";
 
 export const timetableRouter = router({
     getWeekSchedule: protectedProcedure

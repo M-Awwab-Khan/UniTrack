@@ -1,7 +1,8 @@
-import { router, protectedProcedure } from "../index";
+import { createTRPCRouter as router, protectedProcedure } from "../trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { courseStudents, db, notes, noteTypeEnum } from "@uni-track/db";
+import { db } from "@uni-track/db";
+import { courseStudents, notes, noteTypeEnum } from "@uni-track/db/schema";
 import { eq } from "drizzle-orm";
 import { createNotification } from "../lib/notifications";
 

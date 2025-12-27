@@ -7,18 +7,17 @@ import { CreateInviteModal } from "@/components/admin/ta-invites/create-invite-m
 import { Button } from "@/components/ui/button";
 import { Plus, Users, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
-import { useTRPC } from "@/utils/trpc";
 import { toast } from "sonner";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { api } from "@/trpc/react";
 
 export default function AdminTAInvitesPage() {
-    const trpc = useTRPC();
+    const utils = api.useUtils();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-    const { data: invites, isLoading, refetch } = useQuery(trpc.admin.getTaInvites.queryOptions());
+    const { data: invites, isLoading, refetch } = api.admin.getTaInvites.useQuery();
 
     // Revoke mutation
-    const revokeMutation = useMutation(trpc.admin.revokeTaInvite.mutationOptions({
+    const revokeMutation = api.admin.revokeTaInvite.useMutation({
         onSuccess: () => {
             toast.success("Invite revoked successfully");
             refetch();
@@ -28,7 +27,7 @@ export default function AdminTAInvitesPage() {
                 description: error.message,
             });
         },
-    }));
+    });
 
     const handleRevoke = (inviteId: string) => {
         revokeMutation.mutate({ inviteId });

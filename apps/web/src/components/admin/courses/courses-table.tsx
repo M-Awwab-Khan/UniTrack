@@ -10,12 +10,10 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useTRPC } from "@/utils/trpc";
 import { format } from "date-fns";
 import { Loader2, MoreHorizontal, Edit, Archive, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -24,19 +22,20 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { api } from "@/trpc/react";
 
 export function CoursesTable() {
-    const trpc = useTRPC();
+    const utils = api.useUtils();
     const [page, setPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState("");
     const limit = 10; // Items per page
 
-    const { data: courses = [], isLoading, isError } = useQuery(
-        trpc.admin.getAllCourses.queryOptions({
+    const { data: courses = [], isLoading, isError } = api.admin.getAllCourses.useQuery(
+        {
             page,
             limit,
             search: searchTerm,
-        })
+        }
     );
 
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {

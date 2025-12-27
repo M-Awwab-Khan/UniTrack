@@ -1,7 +1,5 @@
 "use client";
 
-import { useTRPC } from "@/utils/trpc";
-import { useQuery, useMutation } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -14,28 +12,29 @@ import { Bell, Moon, Sun, Monitor, Shield, LogOut, Clock, LayoutDashboard } from
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes"; // Assuming next-themes is used, or simulate
+import { api } from "@/trpc/react";
 
 export default function SettingsPage() {
-    const trpc = useTRPC();
+    const utils = api.useUtils();
     // Fetch settings
-    const { data: settings, isLoading, refetch } = useQuery(trpc.settings.getSettings.queryOptions());
+    const { data: settings, isLoading, refetch } = api.settings.getSettings.useQuery();
     const { setTheme: setSystemTheme, theme: currentTheme } = useTheme();
 
-    const updatePreferences = useMutation(trpc.settings.updatePreferences.mutationOptions({
+    const updatePreferences = api.settings.updatePreferences.useMutation({
         onSuccess: () => {
             toast.success("Preferences saved");
             refetch();
         },
         onError: (err) => toast.error(err.message),
-    }));
+    });
 
-    const updateNotifications = useMutation(trpc.settings.updateNotifications.mutationOptions({
+    const updateNotifications = api.settings.updateNotifications.useMutation({
         onSuccess: () => {
             toast.success("Notification settings saved");
             refetch();
         },
         onError: (err) => toast.error(err.message),
-    }));
+    });
 
     const handleThemeChange = (val: string) => {
         setSystemTheme(val); // Update client theme instantly

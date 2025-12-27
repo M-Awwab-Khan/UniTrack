@@ -2,15 +2,13 @@
 
 import { motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
-import { useTRPC } from "@/utils/trpc";
-import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
-
+import { api } from "@/trpc/react";
 import { formatDistanceToNow } from "date-fns";
 
 export function RecentAnnouncements() {
-    const trpc = useTRPC();
-    const { data: announcements, isLoading } = useQuery(trpc.studentDashboard.getRecentAnnouncements.queryOptions());
+    const utils = api.useUtils();
+    const { data: announcements, isLoading } = api.studentDashboard.getRecentAnnouncements.useQuery();
 
     if (isLoading) {
         return (

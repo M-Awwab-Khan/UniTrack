@@ -3,6 +3,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "@uni-track/db";
 import * as schema from "@uni-track/db/schema/auth";
+import { env } from "@uni-track/config/env";
 
 export const auth = betterAuth({
 	user: {
@@ -24,7 +25,7 @@ export const auth = betterAuth({
 
 		schema: schema,
 	}),
-	trustedOrigins: [process.env.CORS_ORIGIN || ""],
+	trustedOrigins: [env.CORS_ORIGIN || ""],
 	emailAndPassword: {
 		enabled: true,
 	},

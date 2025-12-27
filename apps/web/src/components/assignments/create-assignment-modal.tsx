@@ -29,11 +29,10 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { useTRPC } from "@/utils/trpc";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
+import { api } from "@/trpc/react";
 
 // Enum match backend
 const assignmentTypes = ["Lab", "Assignment", "Quiz", "Project", "Presentation"] as const;
@@ -59,8 +58,7 @@ interface CreateAssignmentModalProps {
 }
 
 export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentModalProps) {
-    const trpc = useTRPC();
-    const queryClient = useQueryClient();
+    const utils = api.useUtils();
     const [courses, setCourses] = useState<{ id: string; name: string; code: string }[]>([]);
 
     // Fetch courses for basic selection (ideally filtered by permissions)
@@ -71,7 +69,7 @@ export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentMo
     // The previous plan didn't specify "getMyCourses".
     // I will use getAllCourses and frontend filtering or just show all and backend rejects.
     // Wait, `trpc.admin.getAllCourses` exists.
-    const { data: allCourses } = useQuery(trpc.courses.getAllCourses.queryOptions({}));
+    const { data: allCourses } = api.courses.getAllCourses.useQuery({});
 
     useEffect(() => {
         if (allCourses) {
@@ -91,17 +89,17 @@ export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentMo
         },
     });
 
-    const createMutation = useMutation(trpc.assignments.create.mutationOptions({
+    const createMutation = api.assignments.create.useMutation({
         onSuccess: () => {
             toast.success("Assignment created successfully");
             onOpenChange(false);
             form.reset();
-            queryClient.invalidateQueries({ queryKey: [['assignments']] });
+            utils.assignments.invalidate();
         },
         onError: (err: any) => {
             toast.error(err.message || "Failed to create assignment");
         },
-    }));
+    });
 
     const onSubmit = (values: z.infer<typeof formSchema>) => {
         // Combine date and time

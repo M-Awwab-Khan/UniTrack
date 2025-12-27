@@ -22,7 +22,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { useTRPC } from "@/utils/trpc";
+import { api } from "@/trpc/react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
@@ -45,7 +45,7 @@ interface CreateCourseFormProps {
 }
 
 export function CreateCourseForm({ onSuccess, onCancel }: CreateCourseFormProps) {
-    const trpc = useTRPC();
+    const utils = api.useUtils();
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema) as any,
         defaultValues: {
@@ -59,18 +59,19 @@ export function CreateCourseForm({ onSuccess, onCancel }: CreateCourseFormProps)
         },
     });
 
-    const createCourse = useMutation(trpc.admin.createCourse.mutationOptions({
+    const createCourse = api.admin.createCourse.useMutation({
         onSuccess: () => {
             toast.success("Course created successfully");
             form.reset();
             onSuccess?.();
+            utils.admin.getAllCourses.invalidate();
         },
         onError: (error: any) => {
             toast.error("Failed to create course", {
                 description: error.message,
             });
         },
-    }) as any);
+    });
 
     function onSubmit(values: FormValues) {
         createCourse.mutate(values as any);

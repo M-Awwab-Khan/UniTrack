@@ -1,30 +1,29 @@
 "use client";
 
-import { useTRPC } from "@/utils/trpc";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/trpc/react";
 
 export function useNotifications() {
-    const trpc = useTRPC();
-    const queryClient = useQueryClient();
 
-    const { data: notifications, isLoading } = useQuery(trpc.notifications.getAll.queryOptions({ limit: 50 }, { refetchInterval: 60000 }));
+    const utils = api.useUtils();
+
+    const { data: notifications, isLoading } = api.notifications.getAll.useQuery({ limit: 50 }, { refetchInterval: 60000 });
 
     // Use the optimized count query for the badge
-    const { data: unreadData } = useQuery(trpc.notifications.getUnreadCount.queryOptions(void 0, { refetchInterval: 60000 }));
+    const { data: unreadData } = api.notifications.getUnreadCount.useQuery(void 0, { refetchInterval: 60000 });
 
-    const markReadMutation = useMutation(trpc.notifications.markAsRead.mutationOptions({
+    const markReadMutation = api.notifications.markAsRead.useMutation({
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: trpc.notifications.getAll.queryKey() });
-            queryClient.invalidateQueries({ queryKey: trpc.notifications.getUnreadCount.queryKey() });
+            utils.notifications.getAll.invalidate();
+            utils.notifications.getUnreadCount.invalidate();
         }
-    }));
+    });
 
-    const markAllReadMutation = useMutation(trpc.notifications.markAllAsRead.mutationOptions({
+    const markAllReadMutation = api.notifications.markAllAsRead.useMutation({
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: trpc.notifications.getAll.queryKey() });
-            queryClient.invalidateQueries({ queryKey: trpc.notifications.getUnreadCount.queryKey() });
+            utils.notifications.getAll.invalidate();
+            utils.notifications.getUnreadCount.invalidate();
         }
-    }));
+    });
 
     return {
         notifications: notifications || [],

@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { useNotifications } from "./use-notifications";
 import { NotificationDrawer } from "./notification-drawer";
 import { useNotificationStore } from "./notification-store";
-import { Badge } from "@/components/ui/badge";
 
 export function NotificationBell() {
     const { unreadCount } = useNotifications();

@@ -1,14 +1,16 @@
 
-import { router, protectedProcedure } from "../index";
+import { createTRPCRouter as router, protectedProcedure } from "../trpc";
+import { db } from "@uni-track/db";
 import {
-    db,
     courseStudents,
     assignmentSubmissions,
-} from "@uni-track/db";
+} from "@uni-track/db/schema";
 import { eq } from "drizzle-orm";
 
 export const studentDashboardRouter = router({
     getStats: protectedProcedure.query(async ({ ctx }) => {
+        console.log(ctx.session.user);
+        console.log("REQUEST USER ID: ", ctx.session.user.id);
         const { id: userId } = ctx.session.user;
 
         // 1. Enrolled Courses Count

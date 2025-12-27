@@ -29,11 +29,10 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { useTRPC } from "@/utils/trpc";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
+import { api } from "@/trpc/react";
 
 // Matches DB enum or whatever we set in schema.
 // const noteTypeEnum = pgEnum("type", ["Lecture Notes", "Slides", "Lab Manual", "Reference", "Link", "PDF"]); 
@@ -54,11 +53,10 @@ interface CreateNoteModalProps {
 }
 
 export function CreateNoteModal({ open, onOpenChange }: CreateNoteModalProps) {
-    const trpc = useTRPC();
-    const queryClient = useQueryClient();
+    const utils = api.useUtils();
     const [courses, setCourses] = useState<{ id: string; name: string; code: string }[]>([]);
 
-    const { data: allCourses } = useQuery(trpc.courses.getAllCourses.queryOptions({}));
+    const { data: allCourses } = api.courses.getAllCourses.useQuery({});
 
     useEffect(() => {
         if (allCourses) {
@@ -77,17 +75,17 @@ export function CreateNoteModal({ open, onOpenChange }: CreateNoteModalProps) {
         },
     });
 
-    const createMutation = useMutation(trpc.notes.create.mutationOptions({
+    const createMutation = api.notes.create.useMutation({
         onSuccess: () => {
             toast.success("Note created successfully");
             onOpenChange(false);
             form.reset();
-            queryClient.invalidateQueries({ queryKey: [['notes']] });
+            utils.notes.getAll.invalidate();
         },
         onError: (err: any) => {
             toast.error(err.message || "Failed to create note");
         },
-    }));
+    });
 
     const onSubmit = (values: z.infer<typeof formSchema>) => {
         createMutation.mutate({

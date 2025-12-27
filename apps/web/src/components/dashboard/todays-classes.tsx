@@ -3,25 +3,28 @@
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Clock, MapPin, Video } from "lucide-react";
-import { useTRPC } from "@/utils/trpc";
-import { useQuery } from "@tanstack/react-query";
+import { api } from "@/trpc/react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function TodaysClasses() {
-    const trpc = useTRPC();
-    const { data: classes, isLoading } = useQuery(trpc.studentDashboard.getTodaysClasses.queryOptions());
+    const utils = api.useUtils();
+    const { data: classes, isLoading } = api.studentDashboard.getTodaysClasses.useQuery();
 
-    const formatTimeRange = (start: string, end: string) => {
-        // Simple formatter if strings are HH:mm:ss
-        // Or assume they are ISO? The backend says `startTime: s.startTime`. Drizzle Time is string "HH:mm:ss".
-        // Let's just slice for HH:mm if needed or use date dummy.
+    const formatTimeRange = (start: string | null | undefined, end: string | null | undefined) => {
+        if (!start || !end) return "";
+
         const formatTime = (t: string) => {
-            const [h, m] = t.split(':');
-            const hour = parseInt(h);
-            const ampm = hour >= 12 ? 'PM' : 'AM';
-            const showHour = hour % 12 || 12;
-            return `${showHour}:${m} ${ampm}`;
+            const parts = t.split(":");
+            const h = parts[0];
+            const m = parts[1];
+            if (h === undefined || m === undefined) return t;
+
+            const hour = parseInt(h, 10);
+            const ampm = hour >= 12 ? "PM" : "AM";
+            const displayHour = hour % 12 || 12;
+            return `${displayHour}:${m} ${ampm}`;
         };
+
         return `${formatTime(start)} - ${formatTime(end)}`;
     };
 

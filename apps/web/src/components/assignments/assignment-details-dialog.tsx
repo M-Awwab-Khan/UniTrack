@@ -24,8 +24,7 @@ import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useTRPC } from "@/utils/trpc";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/trpc/react";
 
 interface AssignmentData {
     id: string;
@@ -56,20 +55,19 @@ interface AssignmentDetailsDialogProps {
 
 export function AssignmentDetailsDialog({ isOpen, onClose, assignment, onSuccess }: AssignmentDetailsDialogProps) {
     const [submissionText, setSubmissionText] = useState("");
-    const trpc = useTRPC();
-    const queryClient = useQueryClient();
+    const utils = api.useUtils();
 
-    const submitMutation = useMutation(trpc.assignments.submit.mutationOptions({
+    const submitMutation = api.assignments.submit.useMutation({
         onSuccess: () => {
             toast.success("Assignment submitted successfully!");
-            queryClient.invalidateQueries({ queryKey: trpc.assignments.getAll.queryKey() });
+            utils.assignments.getAll.invalidate();
             onSuccess?.();
             onClose();
         },
         onError: (err) => {
             toast.error(err.message || "Failed to submit assignment");
         }
-    }));
+    });
 
     if (!assignment) return null;
 

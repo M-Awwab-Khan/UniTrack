@@ -7,18 +7,17 @@ import { CourseCard } from "@/components/courses/course-card";
 import { CourseFilters } from "@/components/courses/course-filters";
 import { Button } from "@/components/ui/button";
 import { JoinCourseModal } from "@/components/dashboard/join-course-modal";
-import { useTRPC } from "@/utils/trpc";
+import { api } from "@/trpc/react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useQuery } from "@tanstack/react-query";
 
 export default function MyCoursesPage() {
-    const trpc = useTRPC();
+    const utils = api.useUtils();
     const [searchQuery, setSearchQuery] = useState("");
     const [roleFilter, setRoleFilter] = useState("all");
     const [typeFilter, setTypeFilter] = useState("all"); // Type filter might need adjustment if schema doesn't match mock
     const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
 
-    const { data: courses, isLoading } = useQuery(trpc.courses.getMyCourses.queryOptions());
+    const { data: courses, isLoading } = api.courses.getMyCourses.useQuery();
 
     const filteredCourses = (courses || []).filter((course) => {
         const matchesSearch =

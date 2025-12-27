@@ -9,10 +9,9 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { useTRPC } from "@/utils/trpc";
+import { api } from "@/trpc/react";
 import { Loader2, Mail, Calendar, User, BookOpen, GraduationCap, Shield } from "lucide-react";
 import { format } from "date-fns";
-import { useQuery } from "@tanstack/react-query";
 
 interface UserDetailModalProps {
     userId: string;
@@ -21,11 +20,11 @@ interface UserDetailModalProps {
 }
 
 export function UserDetailModal({ userId, open, onOpenChange }: UserDetailModalProps) {
-    const trpc = useTRPC();
-    const { data: user, isLoading, error } = useQuery(trpc.admin.users.getById.queryOptions(
+    const utils = api.useUtils();
+    const { data: user, isLoading, error } = api.admin.users.getById.useQuery(
         { id: userId },
         { enabled: open }
-    ));
+    );
 
     if (!open) return null;
 

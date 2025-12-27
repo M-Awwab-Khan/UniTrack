@@ -7,16 +7,14 @@ import { AssignmentCard } from "@/components/assignments/assignment-card";
 import { AssignmentDetailsDialog } from "@/components/assignments/assignment-details-dialog";
 import { Button } from "@/components/ui/button";
 import { CalendarCheck, LayoutList, LayoutGrid, Plus, Loader2 } from "lucide-react";
-import { useTRPC } from "@/utils/trpc";
 import { type GlobalAssignment } from "@/components/assignments/mock-data";
 import { CreateAssignmentModal } from "@/components/assignments/create-assignment-modal";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/trpc/react";
 
 export default function GlobalAssignmentsPage() {
-    const trpc = useTRPC();
-    const queryClient = useQueryClient();
+    const utils = api.useUtils();
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("All");
     const [courseFilter, setCourseFilter] = useState("all");
@@ -28,18 +26,18 @@ export default function GlobalAssignmentsPage() {
     const isTA = session?.user?.role === "ta";
 
     // Data Fetching
-    const { data: assignmentsData, isLoading } = useQuery(trpc.assignments.getAll.queryOptions());
+    const { data: assignmentsData, isLoading } = api.assignments.getAll.useQuery();
 
     // Mutations
-    const deleteMutation = useMutation(trpc.assignments.delete.mutationOptions({
+    const deleteMutation = api.assignments.delete.useMutation({
         onSuccess: () => {
             toast.success("Assignment deleted");
-            queryClient.invalidateQueries({ queryKey: [['assignments']] });
+            utils.assignments.getAll.invalidate();
         },
         onError: (err: any) => {
             toast.error(err.message || "Failed to delete");
         }
-    }));
+    });
 
     const assignments: GlobalAssignment[] = assignmentsData ? assignmentsData.map(a => ({
         ...a,

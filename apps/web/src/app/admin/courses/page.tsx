@@ -5,7 +5,6 @@ import { CreateCourseForm } from "@/components/admin/courses/create-course-form"
 import { CoursesTable } from "@/components/admin/courses/courses-table";
 import { useQueryClient } from "@tanstack/react-query";
 import { BookOpen, Plus, Key } from "lucide-react";
-import { useTRPC } from "@/utils/trpc";
 import Link from "next/link";
 import {
     Dialog,

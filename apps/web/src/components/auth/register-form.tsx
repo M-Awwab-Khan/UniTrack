@@ -40,8 +40,7 @@ import { authClient } from "@/lib/auth-client";
 
 type RoleType = "student" | "ta" | "teacher" | "admin";
 
-import { useTRPC } from "@/utils/trpc";
-import { useMutation } from "@tanstack/react-query";
+import { api } from "@/trpc/react";
 
 export function RegisterForm() {
     const router = useRouter();
@@ -49,8 +48,8 @@ export function RegisterForm() {
     const [selectedRole, setSelectedRole] = useState<RoleType | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
-    const trpc = useTRPC();
-    const createProfileMutation = useMutation(trpc.auth.createProfile.mutationOptions({
+
+    const createProfileMutation = api.auth.createProfile.useMutation({
         onSuccess: () => {
             toast.success("Account created successfully!");
             router.push("/dashboard");
@@ -58,7 +57,7 @@ export function RegisterForm() {
         onError: (error) => {
             toast.error(error.message);
         },
-    }));
+    });
 
 
     // Determine schema based on role
@@ -107,7 +106,7 @@ export function RegisterForm() {
         setStep(2);
     };
 
-    const registerTaWithInvite = useMutation(trpc.auth.registerTaWithInvite.mutationOptions({
+    const registerTaWithInvite = api.auth.registerTaWithInvite.useMutation({
         onSuccess: async (_, variables) => {
             // Log in the user after successful registration
             try {
@@ -136,7 +135,7 @@ export function RegisterForm() {
             toast.error(error.message);
             setIsLoading(false);
         },
-    }));
+    });
 
     async function onSubmit(values: any) {
         setIsLoading(true);

@@ -19,15 +19,15 @@ export function TimetableGrid({ currentDate }: TimetableGridProps) {
     // Convert to our DAYS array index (0 = Monday in our array)
     const currentDayName = todayIndex >= 1 && todayIndex <= 5 ? DAYS[todayIndex - 1] : null;
 
-    const getPositionStyle = (startTime: string, endTime: string) => {
+    const getPositionStyle = (startTime: string, endTime: string): React.CSSProperties => {
         const [startH, startM] = startTime.split(':').map(Number);
         const [endH, endM] = endTime.split(':').map(Number);
 
-        const startOffset = (startH - 8) * 60 + startM;
-        const duration = (endH * 60 + endM) - (startH * 60 + startM);
+        const startOffset = ((startH ?? 0) - 8) * 60 + (startM ?? 0);
+        const duration = ((endH ?? 0) * 60 + (endM ?? 0)) - ((startH ?? 0) * 60 + (startM ?? 0));
 
         return {
-            top: `${(startOffset / 60) * 80}px`, // 80px per hour
+            top: `${(startOffset / 60) * 80}px`,
             height: `${(duration / 60) * 80}px`,
         };
     };

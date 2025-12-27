@@ -5,11 +5,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useTRPC } from "@/utils/trpc";
 import { Loader2, CheckCircle, AlertCircle, BookOpen } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { cn } from "@/lib/utils";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/trpc/react";
 
 interface JoinCourseModalProps {
     open: boolean;
@@ -22,11 +20,10 @@ export function JoinCourseModal({ open, onOpenChange, onSuccess }: JoinCourseMod
     const [isChecking, setIsChecking] = useState(false);
     const [coursePreview, setCoursePreview] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
+    const utils = api.useUtils();
 
-    const trpc = useTRPC();
-    const queryClient = useQueryClient();
 
-    const checkMutation = useQuery(trpc.courses.getEnrollInfoByCode.queryOptions(
+    const checkMutation = (api.courses.getEnrollInfoByCode.useQuery(
         { code },
         {
             enabled: false,
@@ -34,9 +31,9 @@ export function JoinCourseModal({ open, onOpenChange, onSuccess }: JoinCourseMod
         }
     ));
 
-    const enrollMutation = useMutation(trpc.courses.enrollWithCode.mutationOptions({
+    const enrollMutation = (api.courses.enrollWithCode.useMutation({
         onSuccess: () => {
-            queryClient.invalidateQueries({ "queryKey": trpc.courses.getMyCourses.queryKey() });
+            utils.studentDashboard.getMyCourses.invalidate();
             setCoursePreview(null);
             setCode("");
             setError(null);

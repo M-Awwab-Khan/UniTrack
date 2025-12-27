@@ -1,4 +1,4 @@
-import { router, protectedProcedure } from "../index";
+import { createTRPCRouter as router, protectedProcedure } from "../trpc";
 
 // Mock Data
 const overviewStats = {

@@ -1,12 +1,11 @@
 
-import { router, protectedProcedure } from "../index";
+import { createTRPCRouter as router, protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
 import {
     db,
-    courses,
-    user,
-    semesters,
 } from "@uni-track/db";
+import { courses, user, semesters } from "@uni-track/db/schema";
+
 import { eq, count } from "drizzle-orm";
 
 export const adminDashboardRouter = router({

@@ -25,23 +25,22 @@ import {
     CommandSeparator,
 } from "@/components/ui/command";
 import { Button } from "@/components/ui/button";
-import { useTRPC } from "@/utils/trpc";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { useQuery } from "@tanstack/react-query";
 import { useDebounce } from "@/hooks/use-debounce";
+import { api } from "@/trpc/react";
 
 export function GlobalSearch() {
     const [open, setOpen] = React.useState(false);
     const [query, setQuery] = React.useState("");
-    const debouncedQuery = useDebounce(query, 300); // Assuming hook exists, if not I'll create it
+    const debouncedQuery = useDebounce(query, 300);
     const router = useRouter();
-    const trpc = useTRPC();
+    const utils = api.useUtils();
 
-    const { data, isLoading } = useQuery(trpc.search.globalSearch.queryOptions(
+    const { data, isLoading } = api.search.globalSearch.useQuery(
         { query: debouncedQuery },
         { enabled: debouncedQuery.length >= 2 }
-    ));
+    );
 
     React.useEffect(() => {
         const down = (e: KeyboardEvent) => {

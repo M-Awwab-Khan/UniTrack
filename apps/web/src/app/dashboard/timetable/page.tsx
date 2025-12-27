@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useTRPC } from "@/utils/trpc";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, isSameDay } from "date-fns";
 import { ChevronLeft, ChevronRight, Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,6 +8,7 @@ import { ClassSessionCard } from "@/components/timetable/ClassSessionCard";
 import { AddExtraClassDialog } from "@/components/timetable/AddExtraClassDialog";
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
+import { api } from "@/trpc/react";
 
 // --- Layout Configuration ---
 const START_HOUR = 8; // 8:00 AM
@@ -17,11 +16,10 @@ const END_HOUR = 18;  // 6:00 PM
 const HOUR_HEIGHT = 140; // px per hour
 
 export default function TimetablePage() {
-    const trpc = useTRPC();
+    const utils = api.useUtils();
     const { data: session } = authClient.useSession();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [isAddClassOpen, setIsAddClassOpen] = useState(false);
-    const queryClient = useQueryClient();
 
     const userRole = session?.user?.role;
     const isTaOrAdmin = userRole === 'ta' || userRole === 'admin';
@@ -30,10 +28,10 @@ export default function TimetablePage() {
     const startDate = startOfWeek(currentDate, { weekStartsOn: 1 }); // Monday
     const endDate = endOfWeek(currentDate, { weekStartsOn: 1 });
 
-    const { data: schedule, isLoading } = useQuery(trpc.timetable.getWeekSchedule.queryOptions({
+    const { data: schedule, isLoading } = api.timetable.getWeekSchedule.useQuery({
         startDate,
         endDate,
-    }));
+    });
 
     const nextWeek = () => setCurrentDate(d => addWeeks(d, 1));
     const prevWeek = () => setCurrentDate(d => subWeeks(d, 1));
@@ -71,17 +69,15 @@ export default function TimetablePage() {
         return labels;
     }, []);
 
-    // Helper to calculate position
-    const getPosition = (timeStr: string) => {
-        const [h, m] = timeStr.split(':').map(Number);
+    const getPosition = (timeStr: string): number => {
+        const [h = 0, m = 0] = timeStr.split(':').map(Number);
         const minutesFromStart = (h - START_HOUR) * 60 + m;
         return (minutesFromStart / 60) * HOUR_HEIGHT;
     };
 
-    // Helper to calculate height
-    const getHeight = (startStr: string, endStr: string) => {
-        const [h1, m1] = startStr.split(':').map(Number);
-        const [h2, m2] = endStr.split(':').map(Number);
+    const getHeight = (startStr: string, endStr: string): number => {
+        const [h1 = 0, m1 = 0] = startStr.split(':').map(Number);
+        const [h2 = 0, m2 = 0] = endStr.split(':').map(Number);
         const durationMinutes = (h2 * 60 + m2) - (h1 * 60 + m1);
         return (durationMinutes / 60) * HOUR_HEIGHT;
     };
@@ -218,11 +214,10 @@ export default function TimetablePage() {
                                                             session={session}
                                                             userRole={userRole || ""}
                                                             onUpdate={() => {
-                                                                const key = trpc.timetable.getWeekSchedule.queryKey({
+                                                                utils.timetable.getWeekSchedule.invalidate({
                                                                     startDate,
                                                                     endDate,
-                                                                })
-                                                                queryClient.invalidateQueries({ queryKey: key })
+                                                                });
                                                             }}
                                                             compact
                                                         />
@@ -243,11 +238,10 @@ export default function TimetablePage() {
                     isOpen={isAddClassOpen}
                     onClose={() => setIsAddClassOpen(false)}
                     onSuccess={() => {
-                        const key = trpc.timetable.getWeekSchedule.queryKey({
+                        utils.timetable.getWeekSchedule.invalidate({
                             startDate,
                             endDate,
-                        })
-                        queryClient.invalidateQueries({ queryKey: key })
+                        });
                     }}
                 />
             )}

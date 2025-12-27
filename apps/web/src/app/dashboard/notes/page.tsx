@@ -8,15 +8,13 @@ import { NoteCard } from "@/components/notes/note-card";
 import { NotePreviewDialog } from "@/components/notes/note-preview-dialog";
 import { BookOpen, FolderOpen, Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useTRPC } from "@/utils/trpc";
 import { CreateNoteModal } from "@/components/notes/create-note-modal";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/trpc/react";
 
 export default function NotesPage() {
-    const trpc = useTRPC();
-    const queryClient = useQueryClient();
+    const utils = api.useUtils();
     const [searchQuery, setSearchQuery] = useState("");
     const [typeFilter, setTypeFilter] = useState("All");
     const [courseFilter, setCourseFilter] = useState("all");
@@ -28,18 +26,18 @@ export default function NotesPage() {
     const isTA = session?.user?.role === "ta";
 
     // Data Fetching
-    const { data: notesData, isLoading } = useQuery(trpc.notes.getAll.queryOptions());
+    const { data: notesData, isLoading } = api.notes.getAll.useQuery();
 
     // Mutations
-    const deleteMutation = useMutation(trpc.notes.delete.mutationOptions({
+    const deleteMutation = api.notes.delete.useMutation({
         onSuccess: () => {
             toast.success("Note deleted");
-            queryClient.invalidateQueries({ queryKey: [['notes']] });
+            utils.notes.getAll.invalidate();
         },
         onError: (err: any) => {
             toast.error(err.message || "Failed to delete");
         }
-    }));
+    });
 
     const notes: GlobalNote[] = notesData ? notesData.map(n => ({
         ...n,

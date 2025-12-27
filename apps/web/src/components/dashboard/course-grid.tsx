@@ -3,13 +3,12 @@
 import { motion } from "framer-motion";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { useTRPC } from "@/utils/trpc";
+import { api } from "@/trpc/react";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function CourseOverviewGrid() {
-    const trpc = useTRPC();
-    const { data: courses, isLoading } = useQuery(trpc.studentDashboard.getMyCourses.queryOptions());
+    const { data: courses, isLoading } = api.studentDashboard.getMyCourses.useQuery();
 
     if (isLoading) {
         return (

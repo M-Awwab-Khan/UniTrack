@@ -6,12 +6,12 @@
 		"sourceMap": true,
 		"outDir": "dist",
 		"composite": true,
-		"types": [
-			"node"
-		]
+		"noEmit": false
 	},
 	"include": [
-		"src/**/*",
-		"types/**/*"
+		"src",
+	],
+	"exclude": [
+		"node_modules"
 	]
 }

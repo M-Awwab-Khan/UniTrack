@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useTRPC } from "@/utils/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -14,9 +12,10 @@ import { Loader2, Copy, RefreshCw, XCircle, Plus, ArrowLeft } from "lucide-react
 import Link from "next/link";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { api } from "@/trpc/react";
 
 export default function AdminEnrollmentCodesPage() {
-    const queryClient = useQueryClient();
+    const utils = api.useUtils();
     const [isCreateOpen, setIsCreateOpen] = useState(false);
 
     // Create Form State
@@ -24,15 +23,13 @@ export default function AdminEnrollmentCodesPage() {
     const [maxUses, setMaxUses] = useState<string>("");
     const [expiryDays, setExpiryDays] = useState("7");
 
-    const trpc = useTRPC();
 
-    const { data: codes, isLoading } = useQuery(trpc.admin.enrollmentCodes.list.queryOptions({ courseId: selectedCourseId }));
-    const { data: courses } = useQuery(trpc.admin.getCourses.queryOptions());
+    const { data: codes, isLoading } = api.admin.enrollmentCodes.list.useQuery({ courseId: selectedCourseId });
+    const { data: courses } = api.admin.getCourses.useQuery();
 
-    const createMutation = useMutation(trpc.admin.enrollmentCodes.generate.mutationOptions({
+    const createMutation = api.admin.enrollmentCodes.generate.useMutation({
         onSuccess: () => {
-            const key = trpc.admin.enrollmentCodes.list.queryKey({ courseId: selectedCourseId });
-            queryClient.invalidateQueries({ queryKey: key });
+            utils.admin.enrollmentCodes.list.invalidate({ courseId: selectedCourseId });
             setIsCreateOpen(false);
             toast.success("Enrollment code created successfully");
             setSelectedCourseId("");
@@ -41,18 +38,17 @@ export default function AdminEnrollmentCodesPage() {
         onError: (err) => {
             toast.error(err.message);
         }
-    }));
+    });
 
-    const revokeMutation = useMutation(trpc.admin.enrollmentCodes.revoke.mutationOptions({
+    const revokeMutation = api.admin.enrollmentCodes.revoke.useMutation({
         onSuccess: () => {
-            const key = trpc.admin.enrollmentCodes.list.queryKey({ courseId: selectedCourseId });
-            queryClient.invalidateQueries({ queryKey: key });
+            utils.admin.enrollmentCodes.list.invalidate({ courseId: selectedCourseId });
             toast.success("Code revoked");
         },
         onError: (err) => {
             toast.error(err.message);
         }
-    }));
+    });
 
     const handleCreate = () => {
         if (!selectedCourseId) return;

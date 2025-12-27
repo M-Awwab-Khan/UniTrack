@@ -13,8 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { RefreshCw, Plus, Loader2 } from "lucide-react";
 import { PERMISSION_OPTIONS } from "./mock-data";
 import { toast } from "sonner";
-import { useTRPC } from "@/utils/trpc";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { api } from "@/trpc/react";
 
 interface CreateInviteModalProps {
     isOpen: boolean;
@@ -23,7 +22,6 @@ interface CreateInviteModalProps {
 }
 
 export function CreateInviteModal({ isOpen, onClose, onSuccess }: CreateInviteModalProps) {
-    const trpc = useTRPC();
     // Form State
     const [fullName, setFullName] = useState("");
     const [email, setEmail] = useState("");
@@ -32,13 +30,13 @@ export function CreateInviteModal({ isOpen, onClose, onSuccess }: CreateInviteMo
     const [selectedPermissions, setSelectedPermissions] = useState<string[]>(['create_assignments']);
 
     // Fetch courses
-    const { data: courses = [], isLoading: coursesLoading } = useQuery(trpc.admin.getCourses.queryOptions(undefined, {
+    const { data: courses = [], isLoading: coursesLoading } = api.admin.getCourses.useQuery(undefined, {
         enabled: isOpen,
-    }));
+    });
 
 
     // Create invite mutation
-    const createInvite = useMutation(trpc.admin.createTaInvite.mutationOptions({
+    const createInvite = api.admin.createTaInvite.useMutation({
         onSuccess: (data: { inviteCode: string }) => {
             toast.success(`Invite created successfully!`, {
                 description: `Invite code: ${data.inviteCode}`,
@@ -52,7 +50,7 @@ export function CreateInviteModal({ isOpen, onClose, onSuccess }: CreateInviteMo
                 description: error.message,
             });
         },
-    }));
+    });
 
     const resetForm = () => {
         setFullName("");

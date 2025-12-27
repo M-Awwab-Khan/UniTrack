@@ -1,7 +1,6 @@
 "use client";
 
-import { useTRPC } from "@/utils/trpc";
-import { useQuery } from "@tanstack/react-query";
+import { api } from "@/trpc/react";
 import {
     BookOpen,
     Users,
@@ -19,11 +18,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
 
 export default function AdminDashboardPage() {
-    const trpc = useTRPC();
 
     // Fetch Data
-    const { data: stats, isLoading: statsLoading } = useQuery(trpc.adminDashboard.getDashboardStats.queryOptions());
-    const { data: activity, isLoading: activityLoading } = useQuery(trpc.adminDashboard.getRecentAdminActivity.queryOptions());
+    const { data: stats, isLoading: statsLoading } = api.adminDashboard.getDashboardStats.useQuery();
+    const { data: activity, isLoading: activityLoading } = api.adminDashboard.getRecentAdminActivity.useQuery();
 
     const container = {
         hidden: { opacity: 0 },

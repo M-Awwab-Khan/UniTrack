@@ -3,15 +3,14 @@
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useTRPC } from "@/utils/trpc";
-import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
+import { api } from "@/trpc/react";
 
 import { format, isToday, isTomorrow } from "date-fns";
 
 export function UpcomingDeadlines() {
-    const trpc = useTRPC();
-    const { data: deadlines, isLoading } = useQuery(trpc.studentDashboard.getUpcomingDeadlines.queryOptions());
+    const utils = api.useUtils();
+    const { data: deadlines, isLoading } = api.studentDashboard.getUpcomingDeadlines.useQuery();
 
     const getStatusColor = (status: string) => {
         switch (status) {

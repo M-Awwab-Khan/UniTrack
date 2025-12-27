@@ -1,14 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import {
-    Bell,
-    Search,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { authClient } from "@/lib/auth-client";
+
 import { useRouter } from "next/navigation";
 import { UserProfileDropdown } from "../user-menu";
 import { NotificationBell } from "../notifications/notification-bell";

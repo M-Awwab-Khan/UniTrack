@@ -1,7 +1,8 @@
-import { router, protectedProcedure } from "../index";
+import { createTRPCRouter as router, protectedProcedure } from "../trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { db, assignments, assignmentTypeEnum, courseStudents, assignmentSubmissions } from "@uni-track/db";
+import { db } from "@uni-track/db";
+import { assignments, assignmentTypeEnum, courseStudents, assignmentSubmissions } from "@uni-track/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { createNotification } from "../lib/notifications";
 
@@ -46,7 +47,7 @@ export const assignmentsRouter = router({
     // TAs: See generic info (submissionStatus logic might differ or be N/A)
     getAll: protectedProcedure.query(async ({ ctx }) => {
         const userId = ctx.session.user.id;
-        const role = ctx.session.user.role;
+        // const role = ctx.session.user.role;
 
         const items = await db.query.assignments.findMany({
             with: {

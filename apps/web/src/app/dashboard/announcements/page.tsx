@@ -8,14 +8,14 @@ import { AnnouncementCard } from "@/components/announcements/announcement-card";
 import { AnnouncementDetailDialog } from "@/components/announcements/announcement-detail-dialog";
 import { Bell, BellOff, Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useTRPC } from "@/utils/trpc";
 import { CreateAnnouncementModal } from "@/components/announcements/create-announcement-modal";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/trpc/react";
 
 export default function AnnouncementsPage() {
-    const trpc = useTRPC();
+    const utils = api.useUtils();
     const queryClient = useQueryClient();
     const [searchQuery, setSearchQuery] = useState("");
     const [priorityFilter, setPriorityFilter] = useState("All");
@@ -28,18 +28,18 @@ export default function AnnouncementsPage() {
     const isTA = session?.user?.role === "ta";
 
     // Data Fetching
-    const { data: announcementsData, isLoading } = useQuery(trpc.announcements.getAll.queryOptions());
+    const { data: announcementsData, isLoading } = api.announcements.getAll.useQuery();
 
     // Mutations
-    const deleteMutation = useMutation(trpc.announcements.delete.mutationOptions({
+    const deleteMutation = api.announcements.delete.useMutation({
         onSuccess: () => {
             toast.success("Announcement deleted");
-            queryClient.invalidateQueries({ queryKey: [['announcements']] });
+            utils.announcements.getAll.invalidate();
         },
         onError: (err: any) => {
             toast.error(err.message || "Failed to delete");
         }
-    }));
+    });
 
     const announcements: GlobalAnnouncement[] = announcementsData ? announcementsData.map(a => ({
         ...a,

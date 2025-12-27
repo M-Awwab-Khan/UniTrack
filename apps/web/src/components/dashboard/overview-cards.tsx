@@ -3,9 +3,8 @@
 import { motion } from "framer-motion";
 import { BookOpen, Clock, AlertCircle, Calendar } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useTRPC } from "@/utils/trpc";
-import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
+import { api } from "@/trpc/react";
 
 const container = {
     hidden: { opacity: 0 },
@@ -23,8 +22,9 @@ const item = {
 };
 
 export function OverviewCards() {
-    const trpc = useTRPC();
-    const { data: stats, isLoading } = useQuery(trpc.studentDashboard.getStats.queryOptions());
+    // const utils = api.useUtils();
+    const { data: stats, isLoading } = (api.studentDashboard.getStats.useQuery());
+    console.log(isLoading, stats);
 
     const skeletonCards = Array(4).fill(0).map((_, i) => (
         <Card key={i} className="border-none shadow-sm">

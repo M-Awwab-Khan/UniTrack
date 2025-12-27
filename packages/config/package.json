@@ -1,5 +1,16 @@
 {
 	"name": "@uni-track/config",
 	"version": "0.0.0",
-	"private": true
+	"private": true,
+	"type": "module",
+	"exports": {
+		"./env": {
+			"types": "./env.ts",
+			"default": "./env.ts"
+		},
+		"./tsconfig.base.json": "./tsconfig.base.json"
+	},
+	"dependencies": {
+		"@t3-oss/env-nextjs": "^0.13.10"
+	}
 }

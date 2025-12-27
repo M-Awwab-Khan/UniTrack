@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useTRPC } from "@/utils/trpc";
 import { DataTable } from "@/components/admin/users/data-table";
 import { columns } from "@/components/admin/users/columns";
 import { Input } from "@/components/ui/input";
@@ -16,9 +15,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Users, Search, FilterX, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { api } from "@/trpc/react";
 
 export default function UsersPage() {
-    const trpc = useTRPC();
+    const utils = api.useUtils();
     const [pageIndex, setPageIndex] = useState(0);
     const [pageSize, setPageSize] = useState(10);
     const [search, setSearch] = useState("");
@@ -28,7 +28,7 @@ export default function UsersPage() {
     // Debounce search could be added here, but for now direct state is fine or useDebounce hook if available.
     // relying on simple state for this iteration.
 
-    const { data: users, isLoading, isError, error } = useQuery(trpc.admin.users.list.queryOptions({
+    const { data: users, isLoading, isError, error } = api.admin.users.list.useQuery({
         page: pageIndex + 1,
         limit: pageSize,
         search: search || undefined,
@@ -36,7 +36,7 @@ export default function UsersPage() {
         department: departmentFilter !== "all" ? departmentFilter : undefined,
     }, {
         placeholderData: (prev) => prev,
-    }));
+    });
 
     const clearFilters = () => {
         setSearch("");

@@ -1,4 +1,5 @@
-import { db, notifications } from "@uni-track/db";
+import { db } from "@uni-track/db";
+import { notifications } from "@uni-track/db/schema";
 
 type NotificationInput = {
     userId: string[];

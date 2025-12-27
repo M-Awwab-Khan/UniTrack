@@ -12,9 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
-import { useTRPC } from "@/utils/trpc";
+import { api } from "@/trpc/react";
 import { toast } from "sonner"; // Assuming sonner is used or use toast from hooks
-import { useMutation } from "@tanstack/react-query";
 
 interface CancelClassDialogProps {
     isOpen: boolean;
@@ -24,9 +23,9 @@ interface CancelClassDialogProps {
 }
 
 export function CancelClassDialog({ isOpen, onClose, session, onSuccess }: CancelClassDialogProps) {
-    const trpc = useTRPC();
+    const utils = api.useUtils();
     const [reason, setReason] = useState("");
-    const cancelClass = useMutation(trpc.ta.updateClassSession.mutationOptions({
+    const cancelClass = api.ta.updateClassSession.useMutation({
         onSuccess: () => {
             toast.success("Class cancelled successfully");
             onSuccess();
@@ -35,7 +34,7 @@ export function CancelClassDialog({ isOpen, onClose, session, onSuccess }: Cance
         onError: (err) => {
             toast.error(err.message);
         }
-    }));
+    });
 
 
     const handleSubmit = () => {

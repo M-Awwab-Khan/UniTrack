@@ -45,10 +45,10 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
-import { useTRPC } from "@/utils/trpc";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/trpc/react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useQueryClient } from "@tanstack/react-query";
 
 // --- Framer Motion Variants ---
 const containerVariants = {
@@ -62,18 +62,18 @@ const itemVariants = {
 };
 
 export default function AdminTimetableManagementPage() {
-    const trpc = useTRPC();
+    const utils = api.useUtils();
     const [activeTab, setActiveTab] = useState("semesters");
 
     // Context-aware primary action
     const renderPrimaryAction = () => {
         switch (activeTab) {
             case "semesters":
-                return <CreateSemesterDialog trpc={trpc} />;
+                return <CreateSemesterDialog utils={utils} />;
             case "calendar":
-                return <CreateEventDialog trpc={trpc} />;
+                return <CreateEventDialog utils={utils} />;
             case "templates":
-                return <CreateTemplateDialog trpc={trpc} />;
+                return <CreateTemplateDialog utils={utils} />;
             default:
                 return null;
         }
@@ -113,15 +113,15 @@ export default function AdminTimetableManagementPage() {
                         transition={{ duration: 0.3 }}
                     >
                         <TabsContent value="semesters" className="space-y-6 mt-0">
-                            <SemestersTab trpc={trpc} />
+                            <SemestersTab utils={utils} />
                         </TabsContent>
 
                         <TabsContent value="calendar" className="space-y-6 mt-0">
-                            <AcademicCalendarTab trpc={trpc} />
+                            <AcademicCalendarTab utils={utils} />
                         </TabsContent>
 
                         <TabsContent value="templates" className="space-y-6 mt-0">
-                            <TemplatesTab trpc={trpc} />
+                            <TemplatesTab utils={utils} />
                         </TabsContent>
                     </motion.div>
                 </AnimatePresence>
@@ -155,8 +155,8 @@ function TabTrigger({ value, icon, label, activeTab }: { value: string, icon: Re
 // 🟦 TAB 1: Semesters
 // ----------------------------------------------------------------------
 
-function SemestersTab({ trpc }: { trpc: ReturnType<typeof useTRPC> }) {
-    const { data: semesters, isLoading } = useQuery(trpc.admin.getSemesters.queryOptions());
+function SemestersTab({ utils }: { utils: ReturnType<typeof api.useUtils> }) {
+    const { data: semesters, isLoading } = api.admin.getSemesters.useQuery();
 
     if (isLoading) return <LoadingState />;
 
@@ -235,21 +235,19 @@ function SemesterCard({ sem }: { sem: any }) {
     );
 }
 
-function CreateSemesterDialog({ trpc }: { trpc: ReturnType<typeof useTRPC> }) {
+function CreateSemesterDialog({ utils }: { utils: ReturnType<typeof api.useUtils> }) {
     const [open, setOpen] = useState(false);
-    const queryClient = useQueryClient();
     const [data, setData] = useState({ name: "", startDate: undefined as Date | undefined, endDate: undefined as Date | undefined });
 
-    const mutation = useMutation(trpc.admin.createSemester.mutationOptions({
+    const mutation = api.admin.createSemester.useMutation({
         onSuccess: () => {
-            const key = trpc.admin.getSemesters.queryKey();
-            queryClient.invalidateQueries({ queryKey: key });
+            utils.admin.getSemesters.invalidate();
             setOpen(false);
             toast.success("Semester created successfully");
             setData({ name: "", startDate: undefined, endDate: undefined });
         },
         onError: (err: any) => toast.error(err.message)
-    }));
+    });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -299,8 +297,8 @@ function CreateSemesterDialog({ trpc }: { trpc: ReturnType<typeof useTRPC> }) {
 // 🟨 TAB 2: Academic Calendar
 // ----------------------------------------------------------------------
 
-function AcademicCalendarTab({ trpc }: { trpc: ReturnType<typeof useTRPC> }) {
-    const { data: events, isLoading } = useQuery(trpc.admin.getAcademicEvents.queryOptions());
+function AcademicCalendarTab({ utils }: { utils: ReturnType<typeof api.useUtils> }) {
+    const { data: events, isLoading } = api.admin.getAcademicEvents.useQuery();
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
 
     if (isLoading) return <LoadingState />;
@@ -366,21 +364,19 @@ function EventCard({ evt }: { evt: any }) {
     );
 }
 
-function CreateEventDialog({ trpc }: { trpc: ReturnType<typeof useTRPC> }) {
+function CreateEventDialog({ utils }: { utils: ReturnType<typeof api.useUtils> }) {
     const [open, setOpen] = useState(false);
-    const queryClient = useQueryClient();
     const [data, setData] = useState({ title: "", type: "break", startDate: undefined as Date | undefined, endDate: undefined as Date | undefined, description: "" });
 
-    const mutation = useMutation(trpc.admin.createAcademicEvent.mutationOptions({
+    const mutation = api.admin.createAcademicEvent.useMutation({
         onSuccess: () => {
-            const key = trpc.admin.getAcademicEvents.queryKey();
-            queryClient.invalidateQueries({ queryKey: key });
+            utils.admin.getAcademicEvents.invalidate();
             setOpen(false);
             toast.success("Event added");
             setData({ title: "", type: "break", startDate: undefined, endDate: undefined, description: "" });
         },
         onError: (err: any) => toast.error(err.message)
-    }));
+    });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -432,8 +428,8 @@ function CreateEventDialog({ trpc }: { trpc: ReturnType<typeof useTRPC> }) {
 // 🟩 TAB 3: Class Templates
 // ----------------------------------------------------------------------
 
-function TemplatesTab({ trpc }: { trpc: ReturnType<typeof useTRPC> }) {
-    const { data: templates, isLoading } = useQuery(trpc.admin.getTimetableTemplates.queryOptions());
+function TemplatesTab({ utils }: { utils: ReturnType<typeof api.useUtils> }) {
+    const { data: templates, isLoading } = api.admin.getTimetableTemplates.useQuery();
 
     if (isLoading) return <LoadingState />;
 
@@ -492,23 +488,21 @@ function CourseTemplateCard({ group }: { group: any }) {
     );
 }
 
-function CreateTemplateDialog({ trpc }: { trpc: ReturnType<typeof useTRPC> }) {
+function CreateTemplateDialog({ utils }: { utils: ReturnType<typeof api.useUtils> }) {
     const [open, setOpen] = useState(false);
-    const queryClient = useQueryClient();
-    const { data: courses } = useQuery(trpc.admin.getCourses.queryOptions());
+    const { data: courses } = api.admin.getCourses.useQuery();
 
     const [data, setData] = useState({ courseId: "", dayOfWeek: "1", startTime: "", endTime: "", location: "" });
 
-    const mutation = useMutation(trpc.admin.createTimetableTemplate.mutationOptions({
+    const mutation = api.admin.createTimetableTemplate.useMutation({
         onSuccess: () => {
-            const key = trpc.admin.getTimetableTemplates.queryKey();
-            queryClient.invalidateQueries({ queryKey: key });
+            utils.admin.getTimetableTemplates.invalidate();
             setOpen(false);
             toast.success("Class slot added");
             setData({ courseId: "", dayOfWeek: "1", startTime: "", endTime: "", location: "" });
         },
         onError: (err: any) => toast.error(err.message)
-    }));
+    });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();

@@ -22,8 +22,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { useTRPC } from "@/utils/trpc";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { api } from "@/trpc/react";
 
 const extraClassSchema = z.object({
     courseId: z.string().uuid("Course is required"),
@@ -41,8 +40,8 @@ interface AddExtraClassDialogProps {
 }
 
 export function AddExtraClassDialog({ isOpen, onClose, onSuccess }: AddExtraClassDialogProps) {
-    const trpc = useTRPC();
-    const { data: courses } = useQuery(trpc.courses.getCourses.queryOptions()); // Or use a TA specific query if restricted
+    const utils = api.useUtils();
+    const { data: courses } = api.courses.getAllCourses.useQuery({}); // Or use a TA specific query if restricted
     // Using admin.getCourses for simplicity as TAs usually see all courses or filtered by backend
     // But wait, TA router didn't have getCourses. Admin has.
     // Ideally we should add getCourses to TA router or Public router.
@@ -57,14 +56,14 @@ export function AddExtraClassDialog({ isOpen, onClose, onSuccess }: AddExtraClas
     // If not, I should use `trpc.courses.getMany` or similar.
     // Let's try `trpc.courses.getAll` in code, if it fails I'll fix.
 
-    const addClass = useMutation(trpc.ta.addExtraClass.mutationOptions({
+    const addClass = api.ta.addExtraClass.useMutation({
         onSuccess: () => {
             toast.success("Extra class added");
             onSuccess();
             onClose();
         },
-        onError: (err) => toast.error(err.message)
-    }));
+        onError: (err) => toast.error(err.message),
+    });
 
     const form = useForm<z.infer<typeof extraClassSchema>>({
         resolver: zodResolver(extraClassSchema),
@@ -75,7 +74,7 @@ export function AddExtraClassDialog({ isOpen, onClose, onSuccess }: AddExtraClas
     };
 
     // We need to fetch courses. Using `courses` router if available
-    const { data: courseList } = useQuery(trpc.courses.getCourses.queryOptions());
+    const { data: courseList } = api.courses.getAllCourses.useQuery({});
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>

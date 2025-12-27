@@ -1,7 +1,6 @@
 "use client";
 
-import { useTRPC } from "@/utils/trpc";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { api } from "@/trpc/react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -15,8 +14,8 @@ import { Loader2, Mail, Shield, User, GraduationCap, Building2, Calendar } from 
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ProfilePage() {
-    const trpc = useTRPC();
-    const { data: profile, isLoading, refetch } = useQuery(trpc.profile.getProfile.queryOptions());
+    const utils = api.useUtils();
+    const { data: profile, isLoading, refetch } = api.profile.getProfile.useQuery();
 
     // Optimistic / Local state for name editing
     const [isEditing, setIsEditing] = useState(false);
@@ -26,22 +25,22 @@ export default function ProfilePage() {
         if (profile) setName(profile.name);
     }, [profile]);
 
-    const updateProfile = useMutation(trpc.profile.updateBasicInfo.mutationOptions({
+    const updateProfile = api.profile.updateBasicInfo.useMutation({
         onSuccess: () => {
             toast.success("Profile updated");
             setIsEditing(false);
             refetch();
         },
         onError: (err) => toast.error(err.message),
-    }));
+    });
 
-    const updateStudent = useMutation(trpc.profile.updateStudentProfile.mutationOptions({
+    const updateStudent = api.profile.updateStudentProfile.useMutation({
         onSuccess: () => {
             toast.success("Academic info updated");
             refetch();
         },
         onError: (err) => toast.error(err.message),
-    }));
+    });
 
     const handleSaveBasic = () => {
         updateProfile.mutate({ name });

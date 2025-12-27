@@ -1,6 +1,7 @@
 import { z } from "zod";
-import { publicProcedure, protectedProcedure, router } from "../index";
-import { db, studentProfile, taProfile, teacherProfile, adminProfile, user, taInvites, courseTas, account } from "@uni-track/db";
+import { publicProcedure, protectedProcedure, createTRPCRouter as router } from "../trpc";
+import { db } from "@uni-track/db";
+import { studentProfile, taProfile, teacherProfile, adminProfile, user, taInvites, courseTas, account } from "@uni-track/db/schema";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { hashPassword } from "better-auth/crypto";

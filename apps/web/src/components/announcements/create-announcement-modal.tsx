@@ -29,11 +29,10 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { useTRPC } from "@/utils/trpc";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
+import { api } from "@/trpc/react";
 
 const priorityEnum = ["Important", "Normal"] as const;
 
@@ -50,11 +49,10 @@ interface CreateAnnouncementModalProps {
 }
 
 export function CreateAnnouncementModal({ open, onOpenChange }: CreateAnnouncementModalProps) {
-    const trpc = useTRPC();
-    const queryClient = useQueryClient();
     const [courses, setCourses] = useState<{ id: string; name: string; code: string }[]>([]);
 
-    const { data: allCourses } = useQuery(trpc.courses.getAllCourses.queryOptions({}));
+    const { data: allCourses } = api.courses.getAllCourses.useQuery({});
+    const utils = api.useUtils();
 
     useEffect(() => {
         if (allCourses) {
@@ -71,17 +69,17 @@ export function CreateAnnouncementModal({ open, onOpenChange }: CreateAnnounceme
         },
     });
 
-    const createMutation = useMutation(trpc.announcements.create.mutationOptions({
+    const createMutation = api.announcements.create.useMutation({
         onSuccess: () => {
             toast.success("Announcement created successfully");
             onOpenChange(false);
             form.reset();
-            queryClient.invalidateQueries({ queryKey: [['announcements']] });
+            utils.announcements.getAll.invalidate();
         },
         onError: (err: any) => {
             toast.error(err.message || "Failed to create announcement");
         },
-    }));
+    });
 
     const onSubmit = (values: z.infer<typeof formSchema>) => {
         createMutation.mutate({

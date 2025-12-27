@@ -2,6 +2,7 @@ import { pgTable, text, timestamp, uuid, pgEnum, boolean, integer, uniqueIndex, 
 import { relations } from "drizzle-orm";
 import { courses } from "./courses";
 import { user } from "./auth";
+import { attachments } from "./attachments";
 
 export const assignmentTypeEnum = pgEnum("assignment_type", ["Lab", "Assignment", "Quiz", "Project", "Presentation"]);
 
@@ -24,6 +25,7 @@ export const assignments = pgTable("assignments", {
         .$onUpdate(() => new Date())
         .notNull(),
 });
+
 
 export const assignmentSubmissions = pgTable("assignment_submissions", {
     id: uuid("id").primaryKey().defaultRandom(),
@@ -59,7 +61,9 @@ export const assignmentsRelations = relations(assignments, ({ one, many }) => ({
         references: [user.id],
     }),
     submissions: many(assignmentSubmissions),
+    attachments: many(attachments),
 }));
+
 
 export const assignmentSubmissionsRelations = relations(assignmentSubmissions, ({ one }) => ({
     assignment: one(assignments, {

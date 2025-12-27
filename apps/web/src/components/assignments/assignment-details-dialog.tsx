@@ -18,7 +18,9 @@ import {
     ChevronRight,
     GraduationCap,
     Send,
-    Loader2
+    Loader2,
+    Paperclip,
+    Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
@@ -44,6 +46,15 @@ interface AssignmentData {
     instructions?: string | null;
     resources?: any[]; // Keep flexible if we add resources later
     courseId?: string;
+    attachments?: {
+        id: string;
+        type: "file" | "link";
+        name: string;
+        url: string;
+        publicId?: string;
+        fileSize?: number;
+        mimeType?: string;
+    }[];
 }
 
 interface AssignmentDetailsDialogProps {
@@ -51,10 +62,16 @@ interface AssignmentDetailsDialogProps {
     onClose: () => void;
     assignment: AssignmentData | any; // Support generic input
     onSuccess?: () => void; // meaningful refetch trigger
+    canEdit?: boolean; // Optional prop to control edit permission (e.g. for TAs)
 }
 
-export function AssignmentDetailsDialog({ isOpen, onClose, assignment, onSuccess }: AssignmentDetailsDialogProps) {
+import { AddAttachmentDialog } from "./add-attachment-dialog";
+import { AttachmentList, AttachmentItem } from "./attachment-list";
+
+export function AssignmentDetailsDialog({ isOpen, onClose, assignment, onSuccess, canEdit = false }: AssignmentDetailsDialogProps) {
     const [submissionText, setSubmissionText] = useState("");
+    const [isAddAttachmentOpen, setIsAddAttachmentOpen] = useState(false);
+
     const utils = api.useUtils();
 
     const submitMutation = api.assignments.submit.useMutation({
@@ -66,6 +83,27 @@ export function AssignmentDetailsDialog({ isOpen, onClose, assignment, onSuccess
         },
         onError: (err) => {
             toast.error(err.message || "Failed to submit assignment");
+        }
+    });
+
+    const addAttachmentMutation = api.assignments.addAttachment.useMutation({
+        onSuccess: () => {
+            toast.success("Attachment added successfully");
+            utils.assignments.getAll.invalidate();
+            setIsAddAttachmentOpen(false);
+        },
+        onError: (err) => {
+            toast.error(err.message || "Failed to add attachment");
+        }
+    });
+
+    const removeAttachmentMutation = api.assignments.removeAttachment.useMutation({
+        onSuccess: () => {
+            toast.success("Attachment removed");
+            utils.assignments.getAll.invalidate();
+        },
+        onError: (err) => {
+            toast.error(err.message || "Failed to remove attachment");
         }
     });
 
@@ -107,6 +145,17 @@ export function AssignmentDetailsDialog({ isOpen, onClose, assignment, onSuccess
         });
     };
 
+    const handleAddAttachment = async (attachment: { type: "file" | "link"; name: string; value: string; fileSize?: number; mimeType?: string; }) => {
+        addAttachmentMutation.mutate({
+            assignmentId: assignment.id,
+            type: attachment.type,
+            name: attachment.name,
+            value: attachment.value,
+            fileSize: attachment.fileSize,
+            mimeType: attachment.mimeType,
+        });
+    };
+
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
             <DialogContent className="!max-w-3xl p-0 gap-0 overflow-hidden sm:rounded-2xl border shadow-lg max-h-[90vh] flex flex-col">
@@ -141,7 +190,7 @@ export function AssignmentDetailsDialog({ isOpen, onClose, assignment, onSuccess
 
                 <div className="flex-1 overflow-y-auto p-6 space-y-8">
                     {/* Metadata Grid */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6">
                         <div className="space-y-1">
                             <div className="flex items-center gap-1.5 text-muted-foreground text-xs font-medium uppercase tracking-wider">
                                 <Calendar className="w-3.5 h-3.5" /> Deadline
@@ -219,42 +268,45 @@ export function AssignmentDetailsDialog({ isOpen, onClose, assignment, onSuccess
                                 placeholder="Type your submission here... (or paste link)"
                                 className="min-h-[120px] resize-none focus-visible:ring-primary"
                                 value={submissionText}
-                                onChange={(e) => setSubmissionText(e.target.value)}
+                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setSubmissionText(e.target.value)}
                             />
                             <p className="text-xs text-muted-foreground">
                                 {isSubmitted ? "Resubmitting will override your previous submission attempt." : "Once submitted, it will be marked based on the deadline."}
                             </p>
                         </div>
                     </div>
+                    {/* Attachments Section */}
+                    {((assignment.attachments && assignment.attachments.length > 0) || canEdit) && (
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <h4 className="text-sm font-semibold flex items-center gap-2">
+                                    <Paperclip className="w-4 h-4 text-muted-foreground" />
+                                    Attachments
+                                </h4>
+                                {canEdit && (assignment.attachments?.length || 0) < 3 && (
+                                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => setIsAddAttachmentOpen(true)}>
+                                        <Plus className="w-3.5 h-3.5" /> Add
+                                    </Button>
+                                )}
+                            </div>
+
+                            <AttachmentList
+                                attachments={assignment.attachments || []}
+                                onDelete={(att) => removeAttachmentMutation.mutate({ attachmentId: att.id! })}
+                                canEdit={canEdit}
+                                isDeletingId={removeAttachmentMutation.isPending ? removeAttachmentMutation.variables?.attachmentId : null}
+                            />
+
+                            <AddAttachmentDialog
+                                open={isAddAttachmentOpen}
+                                onOpenChange={setIsAddAttachmentOpen}
+                                onAdd={handleAddAttachment}
+                                isSubmitting={addAttachmentMutation.isPending}
+                            />
+                        </div>
+                    )}
                 </div>
 
-                {/* Resources
-                {assignment.resources && assignment.resources.length > 0 && (
-                    <div className="space-y-3">
-                        <h4 className="text-sm font-semibold flex items-center gap-2">
-                            <Download className="w-4 h-4 text-muted-foreground" />
-                            Resources
-                        </h4>
-                        <div className="grid sm:grid-cols-2 gap-3">
-                            {assignment.resources.map((resource, idx) => (
-                                <div key={idx} className="flex items-center justify-between p-3 rounded-md border bg-card hover:bg-accent/50 transition-colors cursor-pointer group">
-                                    <div className="flex items-center gap-3 overflow-hidden">
-                                        <div className="h-8 w-8 rounded bg-muted flex items-center justify-center flex-shrink-0 text-muted-foreground">
-                                            {resource.type === 'PDF' && <FileText className="w-4 h-4" />}
-                                            {resource.type === 'Doc' && <FileText className="w-4 h-4" />}
-                                            {resource.type === 'Link' && <ExternalLink className="w-4 h-4" />}
-                                        </div>
-                                        <div className="truncate">
-                                            <p className="text-sm font-medium truncate">{resource.name}</p>
-                                            <p className="text-[10px] text-muted-foreground uppercase">{resource.type}</p>
-                                        </div>
-                                    </div>
-                                    <Download className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )} */}
 
                 <DialogFooter className="p-6 pt-4 border-t bg-muted/10 sm:justify-between items-center gap-4 flex-shrink-0">
                     <Button variant="ghost" className="text-muted-foreground hover:text-foreground" onClick={onClose}>

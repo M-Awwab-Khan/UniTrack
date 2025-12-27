@@ -1,4 +1,14 @@
 
+
+export interface Attachment {
+    id: string;
+    type: "file" | "link";
+    name: string;
+    url: string;
+    fileSize?: number | null; // changed from string to number | null to match backend
+    mimeType?: string | null;
+}
+
 export interface GlobalNote {
     id: string;
     title: string;
@@ -9,8 +19,7 @@ export interface GlobalNote {
     courseColor: string;
     uploadedBy: string;
     uploadDate: string; // ISO date
-    fileSize?: string;
-    url: string;
+    attachments: Attachment[];
     week?: string;
     isNew?: boolean;
 }
@@ -20,14 +29,22 @@ export const GLOBAL_NOTES: GlobalNote[] = [
         id: '1',
         title: 'Lecture 5: Root Finding Techniques',
         description: 'Comprehensive detailed notes on Bisection, Newton-Raphson, and Secant methods.',
-        type: 'Lecture Notes' as any, // keeping types flexible for UI
+        type: 'Lecture Notes',
         courseName: 'Applied Numerical Methods',
         courseCode: 'CS-301',
         courseColor: 'bg-blue-500',
         uploadedBy: 'Dr. Sarah Connor',
         uploadDate: new Date(new Date().setDate(new Date().getDate() - 2)).toISOString(),
-        fileSize: '2.4 MB',
-        url: '#',
+        attachments: [
+            {
+                id: 'a1',
+                type: 'file',
+                name: 'Lecture_5_Root_Finding.pdf',
+                url: '#',
+                fileSize: 2400000,
+                mimeType: 'application/pdf'
+            }
+        ],
         week: 'Week 5',
         isNew: true
     },
@@ -41,8 +58,16 @@ export const GLOBAL_NOTES: GlobalNote[] = [
         courseColor: 'bg-emerald-500',
         uploadedBy: 'Ms. Ellie Sattler',
         uploadDate: new Date(new Date().setDate(new Date().getDate() - 3)).toISOString(),
-        fileSize: '1.1 MB',
-        url: '#',
+        attachments: [
+            {
+                id: 'a2',
+                type: 'file',
+                name: 'Lab_05_Instructions.pdf',
+                url: '#',
+                fileSize: 1100000,
+                mimeType: 'application/pdf'
+            }
+        ],
         week: 'Week 5'
     },
     {
@@ -55,8 +80,16 @@ export const GLOBAL_NOTES: GlobalNote[] = [
         courseColor: 'bg-purple-500',
         uploadedBy: 'Dr. Ian Malcolm',
         uploadDate: new Date(new Date().setDate(new Date().getDate() - 4)).toISOString(),
-        fileSize: '5.6 MB',
-        url: '#',
+        attachments: [
+            {
+                id: 'a3',
+                type: 'file',
+                name: 'Distributed_Systems_Intro.pptx',
+                url: '#',
+                fileSize: 5600000,
+                mimeType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+            }
+        ],
         week: 'Week 4'
     },
     {
@@ -69,8 +102,16 @@ export const GLOBAL_NOTES: GlobalNote[] = [
         courseColor: 'bg-blue-500',
         uploadedBy: 'Dr. Sarah Connor',
         uploadDate: new Date(new Date().setDate(new Date().getDate() - 20)).toISOString(),
-        url: '#',
-        fileSize: '500 KB'
+        attachments: [
+            {
+                id: 'a4',
+                type: 'file',
+                name: 'Python_Setup.pdf',
+                url: '#',
+                fileSize: 500000,
+                mimeType: 'application/pdf'
+            }
+        ],
     },
     {
         id: '5',
@@ -81,7 +122,14 @@ export const GLOBAL_NOTES: GlobalNote[] = [
         courseColor: 'bg-indigo-500',
         uploadedBy: 'Mr. John Hammond',
         uploadDate: new Date(new Date().setDate(new Date().getDate() - 10)).toISOString(),
-        url: '#',
+        attachments: [
+            {
+                id: 'a5',
+                type: 'link',
+                name: 'React Official Docs',
+                url: 'https://react.dev'
+            }
+        ],
         week: 'Week 2'
     },
     {
@@ -94,8 +142,16 @@ export const GLOBAL_NOTES: GlobalNote[] = [
         courseColor: 'bg-green-500',
         uploadedBy: 'Prof. Alan Grant',
         uploadDate: new Date(new Date().setDate(new Date().getDate() - 5)).toISOString(),
-        fileSize: '3.2 MB',
-        url: '#',
+        attachments: [
+            {
+                id: 'a6',
+                type: 'file',
+                name: 'Normalization_Readings.pdf',
+                url: '#',
+                fileSize: 3200000,
+                mimeType: 'application/pdf'
+            }
+        ],
         week: 'Week 4'
     }
 ];

@@ -24,7 +24,6 @@ const item = {
 export function OverviewCards() {
     // const utils = api.useUtils();
     const { data: stats, isLoading } = (api.studentDashboard.getStats.useQuery());
-    console.log(isLoading, stats);
 
     const skeletonCards = Array(4).fill(0).map((_, i) => (
         <Card key={i} className="border-none shadow-sm">

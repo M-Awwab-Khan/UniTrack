@@ -2,7 +2,8 @@ import { createTRPCRouter as router, protectedProcedure } from "../trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { db } from "@uni-track/db";
-import { announcements, priorityEnum, courseStudents } from "@uni-track/db/schema";
+import { announcements, priorityEnum, courseStudents, attachments, attachmentTypeEnum } from "@uni-track/db/schema";
+import { storage } from "@uni-track/storage";
 import { eq } from "drizzle-orm";
 import { createNotification } from "../lib/notifications";
 
@@ -36,7 +37,8 @@ export const announcementsRouter = router({
                         name: true,
                         role: true, // Needed for mocked role display if needed, though usually we trust DB role
                     }
-                }
+                },
+                attachments: true,
             },
             orderBy: (announcements, { desc }) => [desc(announcements.createdAt)],
         });
@@ -53,7 +55,14 @@ export const announcementsRouter = router({
             date: item.createdAt.toISOString(),
             priority: item.priority,
             tags: [], // Schema doesn't have tags yet, mocking empty
-            attachments: [], // Schema doesn't have attachments yet
+            attachments: item.attachments.map(att => ({
+                id: att.id,
+                type: att.type,
+                name: att.name,
+                url: att.url,
+                fileSize: att.fileSize,
+                mimeType: att.mimeType,
+            })),
             courseId: item.courseId, // Permission check needed
         }));
     }),
@@ -66,6 +75,13 @@ export const announcementsRouter = router({
                 content: z.string().min(1),
                 courseId: z.string().uuid(),
                 priority: z.enum(priorityEnum.enumValues),
+                attachments: z.array(z.object({
+                    type: z.enum(attachmentTypeEnum.enumValues),
+                    name: z.string().min(1),
+                    value: z.string().min(1),
+                    fileSize: z.number().optional(),
+                    mimeType: z.string().optional(),
+                })).optional(),
             })
         )
         .mutation(async ({ ctx, input }) => {
@@ -77,7 +93,7 @@ export const announcementsRouter = router({
                 });
             }
 
-            const announcement = await db.insert(announcements).values({
+            const [announcement] = await db.insert(announcements).values({
                 title: input.title,
                 content: input.content,
                 courseId: input.courseId,
@@ -91,6 +107,39 @@ export const announcementsRouter = router({
                     message: "Announcement could not be created",
                 });
             }
+
+            // Handle Attachments
+            if (input.attachments && input.attachments.length > 0) {
+                for (const att of input.attachments) {
+                    let url = att.value;
+                    let publicId: string | null = null;
+
+                    if (att.type === 'file') {
+                        try {
+                            const result = await storage.upload(att.value, {
+                                folder: `announcements/${announcement.id}`,
+                                resourceType: 'auto',
+                            });
+                            url = result.url;
+                            publicId = result.publicId;
+                        } catch (error) {
+                            console.error("Upload failed for attachment", att.name, error);
+                            continue;
+                        }
+                    }
+
+                    await db.insert(attachments).values({
+                        announcementId: announcement.id,
+                        type: att.type,
+                        name: att.name,
+                        url: url,
+                        publicId: publicId,
+                        fileSize: att.fileSize,
+                        mimeType: att.mimeType,
+                    });
+                }
+            }
+
             // Notify Students
             const students = await db.query.courseStudents.findMany({
                 where: eq(courseStudents.courseId, input.courseId),
@@ -102,7 +151,7 @@ export const announcementsRouter = router({
                 message: `Announcement ${input.title} has been created`,
                 type: "announcement",
                 entityType: "announcement",
-                entityId: announcement[0]?.id,
+                entityId: announcement.id,
             });
 
             return { success: true };

@@ -9,6 +9,7 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
+    "@cyntler/react-doc-viewer": "^1.17.1",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-avatar": "^1.1.11",
     "@radix-ui/react-collapsible": "^1.1.12",
@@ -35,6 +36,7 @@
     "@uni-track/api": "workspace:*",
     "@uni-track/auth": "workspace:*",
     "@uni-track/db": "workspace:*",
+    "@uni-track/storage": "workspace:*",
     "babel-plugin-react-compiler": "^1.0.0",
     "better-auth": "catalog:",
     "class-variance-authority": "^0.7.1",

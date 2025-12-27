@@ -19,6 +19,7 @@
     "@trpc/server": "catalog:",
     "@uni-track/auth": "workspace:*",
     "@uni-track/db": "workspace:*",
+    "@uni-track/storage": "workspace:*",
     "better-auth": "^1.4.7",
     "dotenv": "catalog:",
     "drizzle-orm": "^0.45.1",

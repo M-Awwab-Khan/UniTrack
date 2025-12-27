@@ -2,29 +2,40 @@
 trigger: always_on
 ---
 
-- For this project we are using 
-  - Next js
-  - Postgres
-  - TRPC
-  - Drizzle ORM
-  - Better Auth
+- For this project we are using Mono repo structure with the following stack
+
+apps
+  ├─ web
+  │   ├─ Next.js 16
+  │   ├─ React 19
+  │   ├─ Tailwind CSS v4
+  |   ├─ Better Auth
+  │   └─ E2E Typesafe API Server & Client (trpc)
+      
+packages
+  ├─ api
+  │   └─ tRPC v11 router definition
+  ├─ auth
+  │   └─ Authentication using better-auth.
+  ├─ db
+  │   └─ Typesafe db calls using Drizzle & Supabase
+  └─ storage
+      └─ Using Cloudinary node js sdk (coming soon)
+
 
 When using trpc on client components, use it the following way, this is just an example from one of correctly implemented module. you have to follow this practice
 
-import { useTRPC } from "@/utils/trpc";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/trpc/react";
 
 
-const trpc = useTRPC();
-const queryClient = useQueryClient();
+    const utils = api.useUtils();
 
-const { data: codes, isLoading } = useQuery(trpc.admin.enrollmentCodes.list.queryOptions({ courseId: selectedCourseId }));
-const { data: courses } = useQuery(trpc.admin.getCourses.queryOptions());
+    const { data: codes, isLoading } = api.admin.enrollmentCodes.list.useQuery({ courseId: selectedCourseId });
+    const { data: courses } = api.admin.getCourses.useQuery();
 
-const createMutation = useMutation(trpc.admin.enrollmentCodes.generate.mutationOptions({
+    const createMutation = api.admin.enrollmentCodes.generate.useMutation({
         onSuccess: () => {
-            const key = trpc.admin.enrollmentCodes.list.queryKey({ courseId: selectedCourseId });
-            queryClient.invalidateQueries({ queryKey: key });
+            utils.admin.enrollmentCodes.list.invalidate({ courseId: selectedCourseId });
             setIsCreateOpen(false);
             toast.success("Enrollment code created successfully");
             setSelectedCourseId("");
@@ -33,21 +44,19 @@ const createMutation = useMutation(trpc.admin.enrollmentCodes.generate.mutationO
         onError: (err) => {
             toast.error(err.message);
         }
-    }));
+    });
 
-    const revokeMutation = useMutation(trpc.admin.enrollmentCodes.revoke.mutationOptions({
+    const revokeMutation = api.admin.enrollmentCodes.revoke.useMutation({
         onSuccess: () => {
-            const key = trpc.admin.enrollmentCodes.list.queryKey({ courseId: selectedCourseId });
-            queryClient.invalidateQueries({ queryKey: key });
+            utils.admin.enrollmentCodes.list.invalidate({ courseId: selectedCourseId });
             toast.success("Code revoked");
         },
         onError: (err) => {
             toast.error(err.message);
         }
-    }));
+    });
 
-
- const handleCreate = () => {
+    const handleCreate = () => {
         if (!selectedCourseId) return;
 
         const expiresAt = new Date();
@@ -62,3 +71,10 @@ const createMutation = useMutation(trpc.admin.enrollmentCodes.generate.mutationO
 
 To check loading use .isPending of the mutation not .isLoading
 
+To use environment variables, use the following code
+
+import { env} form "@unitrack/config/env";
+
+env.EXAMPLE_VAR
+
+Make sure not to mess with server and client variables (env vars are managed through env.ts file using t3 oss)

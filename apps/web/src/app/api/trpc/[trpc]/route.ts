@@ -9,9 +9,7 @@ import { createTRPCContext } from "@uni-track/api/trpc";
  * handling a HTTP request (e.g. when you make requests from Client Components).
  */
 
-// console.log(env);
 const createContext = async (req: NextRequest) => {
-	console.log("🧠 createContext called");
 	return createTRPCContext({
 		headers: req.headers,
 	});

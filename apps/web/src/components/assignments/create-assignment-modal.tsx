@@ -20,6 +20,7 @@ import {
     FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -33,6 +34,9 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api } from "@/trpc/react";
+import { AddAttachmentDialog } from "./add-attachment-dialog";
+import { AttachmentList, AttachmentItem } from "./attachment-list";
+import { Paperclip, Plus } from "lucide-react";
 
 // Enum match backend
 const assignmentTypes = ["Lab", "Assignment", "Quiz", "Project", "Presentation"] as const;
@@ -73,9 +77,24 @@ export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentMo
 
     useEffect(() => {
         if (allCourses) {
-            setCourses(allCourses);
+            setCourses(allCourses.map(c => ({
+                id: c.id,
+                name: c.name,
+                code: c.code
+            })));
         }
     }, [allCourses]);
+
+    const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
+    const [isAddAttachmentOpen, setIsAddAttachmentOpen] = useState(false);
+
+    const handleAddAttachment = (attachment: any) => {
+        setAttachments([...attachments, { ...attachment, id: `pending-${Date.now()}` }]);
+    };
+
+    const handleRemoveAttachment = (attachment: AttachmentItem) => {
+        setAttachments(attachments.filter(a => a.id !== attachment.id));
+    };
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -112,6 +131,13 @@ export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentMo
             type: values.type,
             dueDate: dateTime.toISOString(),
             instructions: values.instructions,
+            attachments: attachments.map(a => ({
+                type: a.type,
+                name: a.name,
+                value: (a as any).value,
+                fileSize: a.fileSize,
+                mimeType: (a as any).mimeType,
+            }))
         });
     };
 
@@ -248,6 +274,33 @@ export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentMo
                                     <FormMessage />
                                 </FormItem>
                             )}
+                        />
+
+                        {/* Attachments Section */}
+                        <div className="space-y-3 pt-2">
+                            <div className="flex items-center justify-between">
+                                <Label className="flex items-center gap-2">
+                                    <Paperclip className="w-4 h-4 text-muted-foreground" />
+                                    Attachments
+                                </Label>
+                                {attachments.length < 3 && (
+                                    <Button type="button" variant="outline" size="sm" onClick={() => setIsAddAttachmentOpen(true)} className="h-7 text-xs gap-1">
+                                        <Plus className="w-3.5 h-3.5" /> Add
+                                    </Button>
+                                )}
+                            </div>
+
+                            <AttachmentList
+                                attachments={attachments}
+                                onDelete={handleRemoveAttachment}
+                                canEdit={true}
+                            />
+                        </div>
+
+                        <AddAttachmentDialog
+                            open={isAddAttachmentOpen}
+                            onOpenChange={setIsAddAttachmentOpen}
+                            onAdd={handleAddAttachment}
                         />
 
                         <DialogFooter>

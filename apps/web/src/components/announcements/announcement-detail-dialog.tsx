@@ -10,8 +10,6 @@ import { format } from "date-fns";
 import {
     Calendar,
     UserCircle,
-    FileText,
-    ExternalLink,
     Paperclip,
     AlertCircle,
     Megaphone,
@@ -19,6 +17,7 @@ import {
     Clock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AttachmentList } from "../assignments/attachment-list";
 
 interface AnnouncementDetailDialogProps {
     isOpen: boolean;
@@ -93,28 +92,15 @@ export function AnnouncementDetailDialog({ isOpen, onClose, announcement }: Anno
 
                     {/* Attachments */}
                     {announcement.attachments && announcement.attachments.length > 0 && (
-                        <div className="border-t pt-6 mt-6">
-                            <h4 className="text-sm font-semibold flex items-center gap-2 mb-4 text-muted-foreground uppercase tracking-wider">
+                        <div className="border-t pt-6 mt-6 space-y-3">
+                            <h4 className="text-sm font-semibold flex items-center gap-2 text-muted-foreground uppercase tracking-wider">
                                 <Paperclip className="w-4 h-4" />
                                 Attachments ({announcement.attachments.length})
                             </h4>
-                            <div className="grid sm:grid-cols-2 gap-3">
-                                {announcement.attachments.map((file, idx) => (
-                                    <a
-                                        key={idx}
-                                        href={file.url}
-                                        className="flex items-center p-3 rounded-lg border bg-card hover:bg-accent/50 hover:border-sidebar-accent transition-all group"
-                                    >
-                                        <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground group-hover:bg-background group-hover:text-primary transition-colors">
-                                            {file.type === 'PDF' ? <FileText className="w-5 h-5" /> : <ExternalLink className="w-5 h-5" />}
-                                        </div>
-                                        <div className="ml-3 flex-1 min-w-0">
-                                            <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{file.name}</p>
-                                            <p className="text-[10px] text-muted-foreground uppercase">{file.type}</p>
-                                        </div>
-                                    </a>
-                                ))}
-                            </div>
+                            <AttachmentList
+                                attachments={announcement.attachments}
+                                canEdit={false}
+                            />
                         </div>
                     )}
                 </div>

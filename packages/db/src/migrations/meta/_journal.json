@@ -15,6 +15,27 @@
       "when": 1766471098008,
       "tag": "0001_luxuriant_the_renegades",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1766835004248,
+      "tag": "0002_ancient_rawhide_kid",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1766848382584,
+      "tag": "0003_light_maginty",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1766851709637,
+      "tag": "0004_volatile_thunderbolt_ross",
+      "breakpoints": true
     }
   ]
 }

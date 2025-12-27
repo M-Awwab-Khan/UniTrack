@@ -14,9 +14,13 @@ import {
     Calendar,
     User,
     HardDrive,
-    File
+    File,
+    Paperclip
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import DocViewer, { DocViewerRenderers } from "@cyntler/react-doc-viewer";
+import { useState, useEffect } from "react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface NotePreviewDialogProps {
     isOpen: boolean;
@@ -25,13 +29,31 @@ interface NotePreviewDialogProps {
 }
 
 export function NotePreviewDialog({ isOpen, onClose, note }: NotePreviewDialogProps) {
+    const [selectedAttachmentId, setSelectedAttachmentId] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (note?.attachments && note.attachments.length > 0) {
+            setSelectedAttachmentId(note.attachments[0]!.id);
+        } else {
+            setSelectedAttachmentId(null);
+        }
+    }, [note]);
+
     if (!note) return null;
+
+    const selectedAttachment = note.attachments.find(a => a.id === selectedAttachmentId);
+
+    // Prepare docs for DocViewer
+    // Note: DocViewer expects uri. For 'file', it's the url. For 'link', we might not preview it directly or use an iframe if we wanted, but standard links are better opened.
+    const docs = selectedAttachment && selectedAttachment.type === 'file'
+        ? [{ uri: selectedAttachment.url, fileName: selectedAttachment.name, fileType: selectedAttachment.mimeType || undefined }]
+        : [];
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0 gap-0 sm:rounded-2xl border shadow-2xl overflow-hidden focus:outline-none">
+            <DialogContent className="!max-w-3xl h-[90vh] flex flex-col p-0 gap-0 sm:rounded-2xl border shadow-2xl overflow-hidden focus:outline-none">
                 {/* 1. Modal Header */}
-                <div className="flex items-start justify-between p-5 pb-4 border-b bg-background z-10">
+                <div className="flex items-start justify-between p-5 pb-4 border-b bg-background z-10 shrink-0">
                     <div className="space-y-1 pr-8">
                         <div className="flex items-center gap-2 flex-wrap">
                             <Badge variant="outline" className={cn("text-[10px] h-5 px-1.5 font-normal border-0 bg-opacity-10", note.courseColor.replace('bg-', 'bg-').replace('bg-', 'text-'))}>
@@ -53,7 +75,7 @@ export function NotePreviewDialog({ isOpen, onClose, note }: NotePreviewDialogPr
                 </div>
 
                 {/* 2. Metadata Section */}
-                <div className="flex flex-wrap items-center gap-x-6 gap-y-2 p-3 px-5 bg-muted/30 border-b text-xs text-muted-foreground">
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-2 p-3 px-5 bg-muted/30 border-b text-xs text-muted-foreground shrink-0">
                     <div className="flex items-center gap-2">
                         <User className="w-3.5 h-3.5" />
                         <span>Uploaded by <span className="font-medium text-foreground">{note.uploadedBy}</span></span>
@@ -62,108 +84,99 @@ export function NotePreviewDialog({ isOpen, onClose, note }: NotePreviewDialogPr
                         <Calendar className="w-3.5 h-3.5" />
                         <span>{format(new Date(note.uploadDate), "MMM d, yyyy")}</span>
                     </div>
-                    {(note.fileSize || note.type !== 'Link') && (
-                        <div className="flex items-center gap-2">
-                            <HardDrive className="w-3.5 h-3.5" />
-                            <span>{note.fileSize || 'Unknown Size'}</span>
-                        </div>
-                    )}
                     <div className="flex items-center gap-2">
-                        <File className="w-3.5 h-3.5" />
-                        <span>{note.type}</span>
+                        <Paperclip className="w-3.5 h-3.5" />
+                        <span>{note.attachments.length} attachment{note.attachments.length !== 1 ? 's' : ''}</span>
                     </div>
                 </div>
 
-                {/* 3. Notes Content / Preview Area */}
-                <div className="flex-1 bg-muted/10 relative flex flex-col items-center justify-center p-4 sm:p-8 overflow-y-auto">
-                    {note.type === 'Link' ? (
-                        <div className="w-full max-w-lg bg-card border rounded-xl p-6 shadow-sm text-center space-y-4">
-                            <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-2">
-                                <ExternalLink className="w-8 h-8" />
-                            </div>
-                            <div>
-                                <h3 className="text-lg font-semibold text-foreground">External Resource</h3>
-                                <p className="text-sm text-muted-foreground mt-1 break-all px-4">
-                                    {note.url === '#' ? 'https://example.com/resource' : note.url}
-                                </p>
-                            </div>
-                            <Button className="gap-2 w-full" onClick={() => window.open(note.url, '_blank')}>
-                                <ExternalLink className="w-4 h-4" />
-                                Open in New Tab
-                            </Button>
+                {/* 3. Main Content: Sidebar + Preview */}
+                <div className="flex flex-1 overflow-hidden">
+                    {/* Attachment Sidebar */}
+                    <div className="w-64 border-r bg-muted/10 shrink-0 flex flex-col">
+                        <div className="p-3 border-b text-xs font-semibold text-muted-foreground bg-muted/20">
+                            Attachments
                         </div>
-                    ) : (
-                        <div className="w-full max-w-3xl h-full flex flex-col shadow-sm border bg-white rounded-lg overflow-hidden">
-                            {/* Mock Preview Header */}
-                            <div className="h-10 bg-gray-100 border-b flex items-center px-4 gap-2">
-                                <div className="flex gap-1.5">
-                                    <div className="w-2.5 h-2.5 rounded-full bg-gray-300"></div>
-                                    <div className="w-2.5 h-2.5 rounded-full bg-gray-300"></div>
-                                </div>
-                                <div className="mx-auto w-1/3 h-2 bg-gray-200 rounded-full"></div>
-                            </div>
-                            {/* Mock Preview Content */}
-                            <div className="flex-1 p-8 sm:p-12 overflow-y-auto bg-white flex flex-col items-center gap-6">
-                                <div className="w-full h-4 bg-gray-100 rounded animate-pulse"></div>
-                                <div className="w-3/4 h-4 bg-gray-100 rounded animate-pulse self-start"></div>
-                                <div className="w-5/6 h-4 bg-gray-100 rounded animate-pulse self-start"></div>
-                                <div className="w-full h-32 bg-gray-50 rounded-lg border-2 border-dashed border-gray-100 flex items-center justify-center">
-                                    <div className="text-center space-y-2">
-                                        <FileText className="w-8 h-8 text-gray-200 mx-auto" />
-                                        <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Preview Page 1</p>
+                        <ScrollArea className="flex-1">
+                            <div className="p-2 space-y-1 w-64">
+                                {note.attachments.map((att) => (
+                                    <button
+                                        key={att.id}
+                                        onClick={() => setSelectedAttachmentId(att.id)}
+                                        className={cn(
+                                            "w-full flex items-start gap-3 p-3 text-left rounded-lg text-sm transition-colors",
+                                            selectedAttachmentId === att.id
+                                                ? "bg-primary/10 text-primary border border-primary/20"
+                                                : "hover:bg-muted text-foreground border border-transparent"
+                                        )}
+                                    >
+                                        {att.type === 'link' ? <ExternalLink className="w-4 h-4 mt-0.5 shrink-0" /> : <FileText className="w-4 h-4 mt-0.5 shrink-0" />}
+                                        <div className="min-w-0 w-full flex-1">
+                                            <p className="font-medium truncate leading-tight">{att.name}</p>
+                                            <p className="text-[10px] text-muted-foreground mt-1">
+                                                {att.type === 'link' ? 'External Link' : att.fileSize ? `${(att.fileSize / 1024 / 1024).toFixed(2)} MB` : 'File'}
+                                            </p>
+                                        </div>
+                                    </button>
+                                ))}
+                                {note.attachments.length === 0 && (
+                                    <div className="p-4 text-center text-muted-foreground text-xs">
+                                        No attachments found.
                                     </div>
-                                </div>
-                                <div className="w-full h-4 bg-gray-100 rounded animate-pulse"></div>
-                                <div className="w-4/5 h-4 bg-gray-100 rounded animate-pulse self-start"></div>
+                                )}
                             </div>
-                            {/* Overlay for "Preview Only" */}
-                            <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-background/10 to-transparent pointer-events-none" />
-                        </div>
-                    )}
-                </div>
+                        </ScrollArea>
+                    </div>
 
-                {/* 4. Description & 5. Footer Actions */}
-                <div className="bg-background border-t">
-                    {/* Description */}
-                    {note.description && (
-                        <div className="px-6 py-4 border-b border-dashed">
-                            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Description</h4>
-                            <p className="text-sm text-foreground/80 italic leading-relaxed">
-                                "{note.description}"
-                            </p>
-                        </div>
-                    )}
-
-                    {/* Footer */}
-                    <div className="p-4 px-6 flex flex-col sm:flex-row items-center justify-between gap-4 bg-muted/5">
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground hidden sm:flex">
-                            {note.week && (
-                                <Badge variant="outline" className="font-normal">
-                                    {note.week}
-                                </Badge>
-                            )}
-                            <span>{note.type === 'Link' ? 'External' : 'Downloadable File'}</span>
-                        </div>
-
-                        <div className="flex items-center gap-3 w-full sm:w-auto">
-                            <Button variant="outline" onClick={onClose} className="flex-1 sm:flex-none">
-                                Close
-                            </Button>
-                            {note.type !== 'Link' && (
-                                <Button className="flex-1 sm:flex-none gap-2">
-                                    <Download className="w-4 h-4" />
-                                    Download Notes
-                                </Button>
-                            )}
-                            {note.type === 'Link' && (
-                                <Button className="flex-1 sm:flex-none gap-2" onClick={() => window.open(note.url, '_blank')}>
-                                    <ExternalLink className="w-4 h-4" />
-                                    Open Link
-                                </Button>
-                            )}
-                        </div>
+                    {/* Preview Area */}
+                    <div className="flex-1 bg-muted/5 relative flex flex-col overflow-hidden">
+                        {selectedAttachment ? (
+                            selectedAttachment.type === 'link' ? (
+                                <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                                    <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-4">
+                                        <ExternalLink className="w-8 h-8" />
+                                    </div>
+                                    <h3 className="text-lg font-semibold mb-2">External Link</h3>
+                                    <p className="text-sm text-muted-foreground mb-6 max-w-md break-all">
+                                        {selectedAttachment.url}
+                                    </p>
+                                    <Button onClick={() => window.open(selectedAttachment.url, '_blank')} className="gap-2">
+                                        Open in New Tab <ExternalLink className="w-4 h-4" />
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="flex-1 w-full h-full">
+                                    <DocViewer
+                                        documents={docs}
+                                        pluginRenderers={DocViewerRenderers}
+                                        className="h-full w-full"
+                                        style={{ height: '100%', background: 'transparent' }}
+                                        config={{
+                                            header: {
+                                                disableHeader: true,
+                                                disableFileName: true,
+                                                retainURLParams: false
+                                            }
+                                        }}
+                                    />
+                                </div>
+                            )
+                        ) : (
+                            <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                                <FileText className="w-12 h-12 mb-4 opacity-20" />
+                                <p>Select an attachment to preview</p>
+                            </div>
+                        )}
                     </div>
                 </div>
+
+                {/* 4. Footer Description (Optional) */}
+                {note.description && (
+                    <div className="max-h-[100px] bg-background border-t p-3 px-5 text-xs text-muted-foreground shrink-0 max-h-[60px] overflow-y-auto">
+                        <span className="font-semibold mr-1">Description:</span>
+                        {note.description}
+                    </div>
+                )}
             </DialogContent>
         </Dialog>
     );

@@ -2,6 +2,7 @@ import { pgTable, text, timestamp, uuid, pgEnum } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { courses } from "./courses";
 import { user } from "./auth";
+import { attachments } from "./attachments";
 
 export const priorityEnum = pgEnum("announcement_priority", ["Normal", "Important"]);
 
@@ -23,7 +24,7 @@ export const announcements = pgTable("announcements", {
         .notNull(),
 });
 
-export const announcementsRelations = relations(announcements, ({ one }) => ({
+export const announcementsRelations = relations(announcements, ({ one, many }) => ({
     course: one(courses, {
         fields: [announcements.courseId],
         references: [courses.id],
@@ -32,4 +33,5 @@ export const announcementsRelations = relations(announcements, ({ one }) => ({
         fields: [announcements.createdBy],
         references: [user.id],
     }),
+    attachments: many(attachments),
 }));

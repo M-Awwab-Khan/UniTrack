@@ -1,7 +1,7 @@
 # TODO
 
 - [X] Make a profile icon (dropdown) for the user in the navbar
-- [ ] Implement global search
+- [X] Implement global search
 - [X] Implement Assignment Tracking
 - [X] Implement global notifications
 - [X] Implement profile and settings page.

@@ -227,6 +227,7 @@ export default function GlobalAssignmentsPage() {
                 isOpen={!!selectedAssignment}
                 onClose={() => setSelectedAssignment(null)}
                 assignment={selectedAssignment}
+                canEdit={isTA}
             />
 
             {/* TA Controls - Floating Action Button */}

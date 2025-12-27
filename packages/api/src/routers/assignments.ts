@@ -2,7 +2,9 @@ import { createTRPCRouter as router, protectedProcedure } from "../trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { db } from "@uni-track/db";
-import { assignments, assignmentTypeEnum, courseStudents, assignmentSubmissions } from "@uni-track/db/schema";
+import { assignments, assignmentTypeEnum, courseStudents, assignmentSubmissions, attachments, attachmentTypeEnum } from "@uni-track/db/schema";
+import { storage } from "@uni-track/storage";
+
 import { eq, and, sql } from "drizzle-orm";
 import { createNotification } from "../lib/notifications";
 
@@ -61,7 +63,8 @@ export const assignmentsRouter = router({
                 submissions: {
                     where: eq(assignmentSubmissions.studentId, userId),
                     limit: 1,
-                }
+                },
+                attachments: true,
             },
             orderBy: (assignments, { asc }) => [asc(assignments.dueDate)],
         });
@@ -115,6 +118,14 @@ export const assignmentsRouter = router({
                 attemptNumber: submission?.attemptNumber,
                 instructions: item.instructions,
                 courseId: item.courseId,
+                attachments: item.attachments.map(att => ({
+                    id: att.id,
+                    type: att.type,
+                    name: att.name,
+                    url: att.url,
+                    fileSize: att.fileSize,
+                    mimeType: att.mimeType,
+                })),
             };
         });
     }),
@@ -197,6 +208,13 @@ export const assignmentsRouter = router({
                 type: z.enum(assignmentTypeEnum.enumValues),
                 dueDate: z.string().datetime(), // Expect ISO string
                 instructions: z.string().optional(),
+                attachments: z.array(z.object({
+                    type: z.enum(attachmentTypeEnum.enumValues),
+                    name: z.string().min(1),
+                    value: z.string().min(1),
+                    fileSize: z.number().optional(),
+                    mimeType: z.string().optional(),
+                })).optional(),
             })
         )
         .mutation(async ({ ctx, input }) => {
@@ -219,10 +237,48 @@ export const assignmentsRouter = router({
                 createdBy: ctx.session.user.id,
             }).returning();
 
-            // Trigger Notification (Notify Creator for Demo)
-            if (newAssignment) {
-                await notifyNewAssignment(input.title, input.courseId, newAssignment.id);
+            if (!newAssignment) {
+                throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create assignment" });
             }
+
+            // Handle Attachments
+            if (input.attachments && input.attachments.length > 0) {
+                for (const att of input.attachments) {
+                    let url = att.value;
+                    let publicId: string | null = null;
+
+                    if (att.type === 'file') {
+                        try {
+                            const result = await storage.upload(att.value, {
+                                folder: `assignments/${newAssignment.id}`,
+                                resourceType: 'auto',
+                            });
+                            url = result.url;
+                            publicId = result.publicId;
+                        } catch (error) {
+                            console.error("Upload failed for attachment", att.name, error);
+                            // We continue with other attachments, or arguably we should fail? 
+                            // Failing strictly is safer for data integrity but UX might be annoying.
+                            // Let's log and continue, but maybe we should throw if critical. 
+                            // For now, let's try to upload others.
+                            continue;
+                        }
+                    }
+
+                    await db.insert(attachments).values({
+                        assignmentId: newAssignment.id,
+                        type: att.type,
+                        name: att.name,
+                        url: url,
+                        publicId: publicId,
+                        fileSize: att.fileSize,
+                        mimeType: att.mimeType,
+                    });
+                }
+            }
+
+            // Trigger Notification (Notify Creator for Demo)
+            await notifyNewAssignment(input.title, input.courseId, newAssignment.id);
 
             return { success: true };
         }),
@@ -325,6 +381,124 @@ export const assignmentsRouter = router({
                 entityType: "assignment",
                 entityId: input.id,
             });
+
+            return { success: true };
+        }),
+    // Add Attachment (TA only)
+    addAttachment: taProcedure
+        .input(z.object({
+            assignmentId: z.string().uuid(),
+            type: z.enum(attachmentTypeEnum.enumValues),
+            name: z.string().min(1),
+            // For files: base64 string or similar passed to storage.upload
+            // For links: just the URL
+            value: z.string().min(1),
+            fileSize: z.number().optional(),
+            mimeType: z.string().optional(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+            // Check ownership/permissions (already covered by taProcedure + course check below)
+            const assignment = await db.query.assignments.findFirst({
+                where: eq(assignments.id, input.assignmentId),
+            });
+
+            if (!assignment) {
+                throw new TRPCError({ code: "NOT_FOUND", message: "Assignment not found" });
+            }
+
+            // Check if TA is assigned to this course
+            const isAssigned = await isTaAssignedToCourse(ctx.session.user.id, assignment.courseId);
+            if (!isAssigned) {
+                throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized for this course" });
+            }
+
+            // Check max attachments
+            const existingAttachments = await db.query.attachments.findMany({
+                where: eq(attachments.assignmentId, input.assignmentId),
+            });
+
+            if (existingAttachments.length >= 3) {
+                throw new TRPCError({ code: "BAD_REQUEST", message: "Maximum 3 attachments per assignment" });
+            }
+
+            let url = input.value;
+            let publicId: string | null = null;
+
+            if (input.type === 'file') {
+                // Upload to Cloudinary
+                try {
+                    const result = await storage.upload(input.value, {
+                        folder: `assignments/${input.assignmentId}`,
+                        resourceType: 'auto',
+                    });
+                    url = result.url;
+                    publicId = result.publicId;
+                } catch (error) {
+                    console.error("Upload failed", error);
+                    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "File upload failed" });
+                }
+            }
+
+            // Insert into DB
+            await db.insert(attachments).values({
+                assignmentId: input.assignmentId,
+                type: input.type,
+                name: input.name,
+                url: url,
+                publicId: publicId,
+                fileSize: input.fileSize,
+                mimeType: input.mimeType,
+            });
+
+            return { success: true };
+        }),
+
+    // Remove Attachment (TA only)
+    removeAttachment: taProcedure
+        .input(z.object({
+            attachmentId: z.string().uuid(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+            const attachment = await db.query.attachments.findFirst({
+                where: eq(attachments.id, input.attachmentId),
+                with: {
+                    assignment: true,
+                }
+            });
+
+            if (!attachment) {
+                throw new TRPCError({ code: "NOT_FOUND", message: "Attachment not found" });
+            }
+
+            // Check if TA is assigned to this course
+            // Careful: attachment.assignment might be null if we don't enforce not-null on relations or logical check.
+            // But since we are in assignments router and it's an assignment attachment, it should be there.
+            // However, with generic tool, attachment could be for announcement.
+            // We should ensure it is an assignment attachment or just check course access through relation.
+            if (!attachment.assignment) {
+                // It might be an announcement attachment, but we are in assignments router.
+                // We can either block or if generic, handle.
+                // Let's assume ID is unique enough. But permissions depend on parent.
+                throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid assignment attachment" });
+            }
+
+            const isAssigned = await isTaAssignedToCourse(ctx.session.user.id, attachment.assignment.courseId);
+            if (!isAssigned) {
+                throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized" });
+            }
+
+            // Delete from Cloudinary if file
+            if (attachment.type === 'file' && attachment.publicId) {
+                try {
+                    await storage.delete(attachment.publicId);
+                } catch (error) {
+                    console.error("Cloudinary delete failed", error);
+                    // Continue to delete from DB even if cloud delete fails, to avoid orphan state
+                }
+            }
+
+            // Delete from DB
+            await db.delete(attachments).where(eq(attachments.id, input.attachmentId)); // Use generic table
 
             return { success: true };
         }),

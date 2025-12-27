@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { JoinCourseModal } from "@/components/dashboard/join-course-modal";
 import { api } from "@/trpc/react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 export default function MyCoursesPage() {
     const utils = api.useUtils();
@@ -126,6 +127,11 @@ export default function MyCoursesPage() {
             <JoinCourseModal
                 open={isJoinModalOpen}
                 onOpenChange={setIsJoinModalOpen}
+                onSuccess={() => {
+                    toast.success("Course joined successfully");
+                    setIsJoinModalOpen(false);
+                    utils.courses.getMyCourses.invalidate();
+                }}
             />
         </div>
     );

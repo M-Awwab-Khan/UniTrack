@@ -2,9 +2,10 @@ import { createTRPCRouter as router, protectedProcedure } from "../trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { db } from "@uni-track/db";
-import { courseStudents, notes, noteTypeEnum } from "@uni-track/db/schema";
+import { courseStudents, notes, noteTypeEnum, attachments, attachmentTypeEnum } from "@uni-track/db/schema";
 import { eq } from "drizzle-orm";
 import { createNotification } from "../lib/notifications";
+import { storage } from "@uni-track/storage"; // Assume storage is available
 
 // Helper to check if TA is assigned to the course
 const isTaAssignedToCourse = async (userId: string, courseId: string) => {
@@ -35,7 +36,8 @@ export const notesRouter = router({
                     columns: {
                         name: true,
                     }
-                }
+                },
+                attachments: true,
             },
             orderBy: (notes, { desc }) => [desc(notes.createdAt)],
         });
@@ -50,8 +52,14 @@ export const notesRouter = router({
             uploadedBy: item.author?.name || "Unknown",
             uploadDate: item.createdAt.toISOString(),
             type: item.type,
-            fileSize: "N/A", // Not storing file size yet
-            url: item.fileUrl,
+            attachments: item.attachments.map(att => ({
+                id: att.id,
+                type: att.type,
+                name: att.name,
+                url: att.url,
+                fileSize: att.fileSize,
+                mimeType: att.mimeType,
+            })),
             week: item.week,
             courseId: item.courseId, // For permissions
         }));
@@ -65,8 +73,14 @@ export const notesRouter = router({
                 description: z.string().optional(),
                 courseId: z.string().uuid(),
                 type: z.enum(noteTypeEnum.enumValues),
-                fileUrl: z.string().url(),
                 week: z.string().optional(),
+                attachments: z.array(z.object({
+                    type: z.enum(attachmentTypeEnum.enumValues),
+                    name: z.string().min(1),
+                    value: z.string().min(1), // Base64 or URL
+                    fileSize: z.number().optional(),
+                    mimeType: z.string().optional(),
+                })).optional(),
             })
         )
         .mutation(async ({ ctx, input }) => {
@@ -78,15 +92,46 @@ export const notesRouter = router({
                 });
             }
 
-            const note = await db.insert(notes).values({
+            const [newNote] = await db.insert(notes).values({
                 title: input.title,
                 description: input.description,
                 courseId: input.courseId,
                 type: input.type,
-                fileUrl: input.fileUrl,
                 week: input.week,
                 createdBy: ctx.session.user.id,
             }).returning();
+
+            // Handle Attachments
+            if (input.attachments && input.attachments.length > 0) {
+                for (const att of input.attachments) {
+                    let url = att.value;
+                    let publicId: string | null = null;
+
+                    if (att.type === 'file') {
+                        try {
+                            const result = await storage.upload(att.value, {
+                                folder: `notes/${newNote?.id}`,
+                                resourceType: 'auto',
+                            });
+                            url = result.url;
+                            publicId = result.publicId;
+                        } catch (error) {
+                            console.error("Upload failed for attachment", att.name, error);
+                            continue;
+                        }
+                    }
+
+                    await db.insert(attachments).values({
+                        noteId: newNote?.id,
+                        type: att.type,
+                        name: att.name,
+                        url: url,
+                        publicId: publicId,
+                        fileSize: att.fileSize,
+                        mimeType: att.mimeType,
+                    });
+                }
+            }
 
             // Notify Students
             const students = await db.query.courseStudents.findMany({
@@ -99,7 +144,7 @@ export const notesRouter = router({
                 message: `Note has been added for ${input.courseId}`,
                 type: "note",
                 entityType: "note",
-                entityId: note[0]?.id,
+                entityId: newNote?.id,
             });
             return { success: true };
         }),
@@ -112,7 +157,6 @@ export const notesRouter = router({
                 title: z.string().min(1),
                 description: z.string().optional(),
                 type: z.enum(noteTypeEnum.enumValues),
-                fileUrl: z.string().url(),
                 week: z.string().optional(),
             })
         )
@@ -138,7 +182,6 @@ export const notesRouter = router({
                     title: input.title,
                     description: input.description,
                     type: input.type,
-                    fileUrl: input.fileUrl,
                     week: input.week,
                 })
                 .where(eq(notes.id, input.id));
@@ -167,6 +210,108 @@ export const notesRouter = router({
             }
 
             await db.delete(notes).where(eq(notes.id, input.id));
+            return { success: true };
+        }),
+
+    // Add Attachment (TA only)
+    addAttachment: taProcedure
+        .input(z.object({
+            noteId: z.string().uuid(),
+            type: z.enum(attachmentTypeEnum.enumValues),
+            name: z.string().min(1),
+            value: z.string().min(1),
+            fileSize: z.number().optional(),
+            mimeType: z.string().optional(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+            const note = await db.query.notes.findFirst({
+                where: eq(notes.id, input.noteId),
+            });
+
+            if (!note) {
+                throw new TRPCError({ code: "NOT_FOUND", message: "Note not found" });
+            }
+
+            const isAssigned = await isTaAssignedToCourse(ctx.session.user.id, note.courseId);
+            if (!isAssigned) {
+                throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized for this course" });
+            }
+
+            // Check max attachments
+            const existingAttachments = await db.query.attachments.findMany({
+                where: eq(attachments.noteId, input.noteId),
+            });
+
+            if (existingAttachments.length >= 10) {
+                throw new TRPCError({ code: "BAD_REQUEST", message: "Maximum 10 attachments per note" });
+            }
+
+            let url = input.value;
+            let publicId: string | null = null;
+
+            if (input.type === 'file') {
+                try {
+                    const result = await storage.upload(input.value, {
+                        folder: `notes/${input.noteId}`,
+                        resourceType: 'auto',
+                    });
+                    url = result.url;
+                    publicId = result.publicId;
+                } catch (error) {
+                    console.error("Upload failed", error);
+                    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "File upload failed" });
+                }
+            }
+
+            await db.insert(attachments).values({
+                noteId: input.noteId,
+                type: input.type,
+                name: input.name,
+                url: url,
+                publicId: publicId,
+                fileSize: input.fileSize,
+                mimeType: input.mimeType,
+            });
+
+            return { success: true };
+        }),
+
+    // Remove Attachment (TA only)
+    removeAttachment: taProcedure
+        .input(z.object({
+            attachmentId: z.string().uuid(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+            const attachment = await db.query.attachments.findFirst({
+                where: eq(attachments.id, input.attachmentId),
+                with: {
+                    note: true,
+                }
+            });
+
+            if (!attachment) {
+                throw new TRPCError({ code: "NOT_FOUND", message: "Attachment not found" });
+            }
+
+            if (!attachment.note) {
+                throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid note attachment" });
+            }
+
+            const isAssigned = await isTaAssignedToCourse(ctx.session.user.id, attachment.note.courseId);
+            if (!isAssigned) {
+                throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized" });
+            }
+
+            if (attachment.type === 'file' && attachment.publicId) {
+                try {
+                    await storage.delete(attachment.publicId);
+                } catch (error) {
+                    console.error("Cloudinary delete failed", error);
+                }
+            }
+
+            await db.delete(attachments).where(eq(attachments.id, input.attachmentId));
+
             return { success: true };
         }),
 });

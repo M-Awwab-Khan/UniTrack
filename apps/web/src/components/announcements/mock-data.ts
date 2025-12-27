@@ -11,7 +11,7 @@ export interface GlobalAnnouncement {
     date: string; // ISO date
     priority: 'Important' | 'Normal';
     tags?: string[];
-    attachments?: { name: string; type: 'PDF' | 'Link' | 'Image'; url: string }[];
+    attachments?: { id: string; name: string; type: 'file' | 'link'; url: string; fileSize?: number; mimeType?: string }[];
     isRead?: boolean;
 }
 
@@ -29,7 +29,7 @@ export const GLOBAL_ANNOUNCEMENTS: GlobalAnnouncement[] = [
         priority: 'Important',
         tags: ['Exam', 'Schedule'],
         attachments: [
-            { name: 'Updated_Exam_Schedule.pdf', type: 'PDF', url: '#' }
+            { id: '1', name: 'Updated_Exam_Schedule.pdf', type: 'file', url: '#', mimeType: 'application/pdf' }
         ]
     },
     {
@@ -44,8 +44,8 @@ export const GLOBAL_ANNOUNCEMENTS: GlobalAnnouncement[] = [
         date: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString(), // Yesterday
         priority: 'Normal',
         attachments: [
-            { name: 'Lab5_Slides.pdf', type: 'PDF', url: '#' },
-            { name: 'starter_code.zip', type: 'Link', url: '#' }
+            { id: '2', name: 'Lab5_Slides.pdf', type: 'file', url: '#', mimeType: 'application/pdf' },
+            { id: '3', name: 'starter_code.zip', type: 'link', url: '#' }
         ]
     },
     {
@@ -86,7 +86,7 @@ export const GLOBAL_ANNOUNCEMENTS: GlobalAnnouncement[] = [
         priority: 'Normal',
         tags: ['Sports', 'Events'],
         attachments: [
-            { name: 'Registration_Form.pdf', type: 'PDF', url: '#' }
+            { id: '4', name: 'Registration_Form.pdf', type: 'file', url: '#', mimeType: 'application/pdf' }
         ]
     }
 ];

@@ -1,22 +1,43 @@
-
 "use client";
 
 import { motion } from "framer-motion";
-import type { CourseDetail } from "@/components/courses/mock-course-details";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { CalendarClock, MapPin } from "lucide-react";
+import { api } from "@/trpc/react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface TimetableTabProps {
-    data: CourseDetail;
+    courseId: string;
 }
 
-export function TimetableTab({ data }: TimetableTabProps) {
+export function TimetableTab({ courseId }: TimetableTabProps) {
+    const { data: schedule, isLoading } = api.timetable.getCourseSchedule.useQuery({ courseId });
+
+    if (isLoading) {
+        return (
+            <div className="space-y-8">
+                <div className="space-y-4">
+                    <Skeleton className="h-8 w-48" />
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-32 rounded-xl" />)}
+                    </div>
+                </div>
+                <div className="space-y-4">
+                    <Skeleton className="h-8 w-32" />
+                    <Skeleton className="h-64 rounded-xl" />
+                </div>
+            </div>
+        );
+    }
+
     // Separate weekly schedule from history
-    const weeklySchedule = data.timetable.filter(t => !t.date);
-    const history = data.timetable.filter(t => t.date).sort((a, b) => new Date(b.date!).getTime() - new Date(a.date!).getTime());
+    // Backend returns date as undefined for templates (weekly schedule) and ISO string for history
+    const weeklySchedule = schedule?.filter(t => !t.date) || [];
+    const history = schedule?.filter(t => t.date)
+        .sort((a, b) => new Date(b.date!).getTime() - new Date(a.date!).getTime()) || [];
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -41,17 +62,21 @@ export function TimetableTab({ data }: TimetableTabProps) {
                     Weekly Schedule
                 </h3>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {weeklySchedule.map((session) => (
+                    {weeklySchedule.length > 0 ? weeklySchedule.map((session) => (
                         <Card key={session.id} className="bg-muted/30 border-dashed">
                             <CardContent className="p-4 flex flex-col gap-3">
                                 <div className="flex justify-between items-center">
-                                    <span className="font-bold text-lg">{session.day}</span>
-                                    <Badge variant="outline">{session.status}</Badge>
+                                    <span className="font-bold text-lg">
+                                        {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][((session.day as unknown) as number) - 1]}
+                                    </span>
+                                    <Badge variant="outline" className={cn("font-normal", getStatusColor(session.status))}>
+                                        {session.status}
+                                    </Badge>
                                 </div>
                                 <div className="space-y-1 text-sm text-muted-foreground">
                                     <div className="flex justify-between">
                                         <span>Time:</span>
-                                        <span className="font-medium text-foreground">{session.startTime} - {session.endTime}</span>
+                                        <span className="font-medium text-foreground">{session.startTime.slice(0, 5)} - {session.endTime.slice(0, 5)}</span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span>Room:</span>
@@ -63,7 +88,11 @@ export function TimetableTab({ data }: TimetableTabProps) {
                                 </div>
                             </CardContent>
                         </Card>
-                    ))}
+                    )) : (
+                        <div className="col-span-full py-8 text-center text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
+                            No weekly schedule defined.
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -71,7 +100,7 @@ export function TimetableTab({ data }: TimetableTabProps) {
             <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Class History</h3>
                 <div className="border rounded-lg divide-y bg-card">
-                    {history.map((session) => (
+                    {history.length > 0 ? history.map((session) => (
                         <div key={session.id} className="p-4 flex items-center justify-between hover:bg-muted/30 transition-colors">
                             <div className="flex items-center gap-6">
                                 <div className="flex flex-col items-center min-w-[3rem]">
@@ -80,14 +109,18 @@ export function TimetableTab({ data }: TimetableTabProps) {
                                 </div>
                                 <div>
                                     <div className="font-medium">{session.day} Session - {session.room}</div>
-                                    <div className="text-sm text-muted-foreground">{session.startTime} - {session.endTime}</div>
+                                    <div className="text-sm text-muted-foreground">{session.startTime.slice(0, 5)} - {session.endTime.slice(0, 5)}</div>
                                 </div>
                             </div>
                             <Badge variant="outline" className={cn("border", getStatusColor(session.status))}>
                                 {session.status}
                             </Badge>
                         </div>
-                    ))}
+                    )) : (
+                        <div className="p-8 text-center text-muted-foreground">
+                            No history recorded.
+                        </div>
+                    )}
                 </div>
             </div>
         </motion.div>

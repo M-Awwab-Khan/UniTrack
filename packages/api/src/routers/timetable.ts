@@ -128,4 +128,48 @@ export const timetableRouter = router({
                 .filter(s => s.date >= startDate && s.date <= endDate)
                 .sort((a, b) => a.date.getTime() - b.date.getTime());
         }),
+    // Get Course Schedule (Templates + History)
+    getCourseSchedule: protectedProcedure
+        .input(z.object({ courseId: z.string().uuid() }))
+        .query(async ({ input }) => {
+            // 1. Fetch Templates (Weekly Schedule)
+            const templates = await db.query.timetableTemplates.findMany({
+                where: (t, { eq }) => eq(t.courseId, input.courseId),
+            });
+
+            // 2. Fetch Sessions (History & Specifics)
+            // Fetch past sessions (conducted/cancelled) or upcoming deviations?
+            // "Class History" usually implies past.
+            // Let's fetch all sessions for this course to let frontend decide, or just past/recent future?
+            // The mock data shows history (with date).
+            const sessions = await db.query.classSessions.findMany({
+                where: (s, { eq }) => eq(s.courseId, input.courseId),
+                orderBy: (s, { desc }) => [desc(s.date)],
+                limit: 20, // Limit history
+            });
+
+            // Map to unified structure
+            const templateItems = templates.map(t => ({
+                id: t.id,
+                day: t.dayOfWeek,
+                startTime: t.startTime,
+                endTime: t.endTime,
+                room: t.location,
+                status: 'Scheduled' as const, // Default for templates
+                date: undefined as string | undefined, // Explicitly undefined for templates
+            }));
+
+            const sessionItems = sessions.map(s => ({
+                id: s.id,
+                day: new Date(s.date).toLocaleDateString('en-US', { weekday: 'long' }),
+                date: s.date.toISOString(),
+                startTime: s.startTime,
+                endTime: s.endTime,
+                room: s.location,
+                status: (s.status === 'scheduled' ? 'Scheduled' :
+                    s.status === 'conducted' ? 'Conducted' : 'Cancelled') as 'Scheduled' | 'Conducted' | 'Cancelled' | 'Compensatory',
+            }));
+
+            return [...templateItems, ...sessionItems];
+        }),
 });

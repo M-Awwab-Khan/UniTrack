@@ -151,35 +151,39 @@ export const searchRouter = router({
                     title: a.title,
                     subtitle: `${a.course.code} • Due ${new Date(a.dueDate).toLocaleDateString()}`,
                     entityType: "assignment" as const,
-                    href: `/dashboard/assignments?highlight=${a.id}` // Or specific page if exists
+                    route: "/dashboard/assignments",
+                    modal: "details"
                 })),
                 announcements: announcementsResults.map(a => ({
                     id: a.id,
                     title: a.title,
                     subtitle: a.course.code,
                     entityType: "announcement" as const,
-                    href: `/dashboard/announcements?highlight=${a.id}`
+                    route: "/dashboard/announcements",
+                    modal: "details"
                 })),
                 notes: notesResults.map(n => ({
                     id: n.id,
                     title: n.title,
                     subtitle: `${n.course.code} • ${n.type}`,
                     entityType: "note" as const,
-                    href: `/dashboard/notes?highlight=${n.id}`
+                    route: "/dashboard/notes",
+                    modal: "preview"
                 })),
                 courses: coursesResults.map(c => ({
                     id: c.id,
                     title: c.name,
                     subtitle: `${c.code} • ${c.instructor || "No Instructor"}`,
                     entityType: "course" as const,
-                    href: `/courses/${c.id}`
+                    route: `/dashboard/courses/${c.id}`
                 })),
                 classes: classesResults.map(c => ({
                     id: c.id,
                     title: `${c.course.name} - ${c.type}`,
                     subtitle: `${c.location} • ${new Date(c.date).toLocaleDateString()} ${c.startTime}`,
                     entityType: "class" as const,
-                    href: `/dashboard/timetable`
+                    route: "/dashboard/timetable",
+                    modal: "class"
                 }))
             };
         })

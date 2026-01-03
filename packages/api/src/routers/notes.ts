@@ -65,6 +65,63 @@ export const notesRouter = router({
         }));
     }),
 
+    // Get Notes by Course ID
+    getByCourseId: protectedProcedure
+        .input(z.object({ courseId: z.string().uuid() }))
+        .query(async ({ input }) => {
+            const items = await db.query.notes.findMany({
+                where: (n, { eq }) => eq(n.courseId, input.courseId),
+                with: {
+                    course: true,
+                    author: {
+                        columns: {
+                            name: true,
+                        }
+                    },
+                    attachments: true,
+                },
+                orderBy: (notes, { desc }) => [desc(notes.createdAt)],
+            });
+
+            return items.flatMap(item => {
+                // Return attachments as individual resources if they exist, or the note itself if modeled differently.
+                // The UI expects a list of resources (PDF, Link, etc.).
+                // In our schema, Note has attachments.
+                // We can flatten this: Each attachment becomes a "Resource".
+                // OR we map each Note as a resource group?
+                // The UI `CourseDetails` expects `resources: Resource[]`.
+                // Resource has `type: 'PDF' | 'Link' ...`, `url`.
+
+                // Let's map each attachment to a resource.
+                // What about the Note metadata (title, description)?
+                // Maybe we treat the Note as a container and if it has attachments, list them.
+                // If the Note IS the resource (no attachments, just text?), we might lose it if only mapping attachments.
+                // But `notes` table likely represents a "topic" or "week" or "upload entry".
+
+                // Let's assume each attachment is a resource.
+                // If a note has multiple attachments, we return multiple resources?
+                // Or we return Notes and let UI handle it?
+                // The MOCK_DATA `resources` is a flat list.
+                // Let's return a flat list of attachments, enriched with Note metadata.
+
+                return item.attachments.map(att => ({
+                    id: att.id,
+                    title: att.name,
+                    type: att.type === 'file' ? 'PDF' : 'Link',
+                    url: att.url,
+                    uploadDate: item.createdAt.toISOString(),
+                    category: item.week || "General",
+                    courseId: item.courseId,
+                    // Enriched fields for NotePreviewDialog
+                    courseName: item.course.name,
+                    courseCode: item.course.code,
+                    courseColor: "bg-blue-500", // placeholder
+                    uploadedBy: item.author.name,
+                    description: item.description,
+                }));
+            });
+        }),
+
     // Create Note
     create: taProcedure
         .input(

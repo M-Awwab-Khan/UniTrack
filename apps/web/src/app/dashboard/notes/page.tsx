@@ -13,12 +13,20 @@ import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
 import { api } from "@/trpc/react";
 
+import { useRouter, useSearchParams } from "next/navigation";
+
 export default function NotesPage() {
     const utils = api.useUtils();
+    const router = useRouter();
+    const searchParams = useSearchParams();
+
+    // URL State
+    const openParam = searchParams.get("open");
+    const idParam = searchParams.get("id");
+
     const [searchQuery, setSearchQuery] = useState("");
     const [typeFilter, setTypeFilter] = useState("All");
     const [courseFilter, setCourseFilter] = useState("all");
-    const [selectedNote, setSelectedNote] = useState<GlobalNote | null>(null);
     const [createModalOpen, setCreateModalOpen] = useState(false);
 
     // Auth & Permissions
@@ -60,10 +68,23 @@ export default function NotesPage() {
         return matchesSearch && matchesType && matchesCourse;
     }).sort((a, b) => new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime());
 
+    // Derived Selection
+    const selectedNote = (openParam === "preview" && idParam && notes.length > 0)
+        ? notes.find(n => n.id === idParam) || null
+        : null;
+
     const handleDelete = (id: string) => {
         if (confirm("Are you sure you want to delete this note?")) {
             deleteMutation.mutate({ id });
         }
+    }
+
+    const handleNoteClick = (note: GlobalNote) => {
+        router.push(`/dashboard/notes?open=preview&id=${note.id}`);
+    }
+
+    const handleCloseModal = () => {
+        router.replace("/dashboard/notes");
     }
 
     return (
@@ -110,7 +131,7 @@ export default function NotesPage() {
                                     <NoteCard
                                         key={note.id}
                                         note={note}
-                                        onClick={() => setSelectedNote(note)}
+                                        onClick={() => handleNoteClick(note)}
                                         canEdit={isTA}
                                         onEdit={() => toast.info("Edit not implemented yet")}
                                         onDelete={() => handleDelete(note.id)}
@@ -149,7 +170,7 @@ export default function NotesPage() {
             {/* Preview Dialog */}
             <NotePreviewDialog
                 isOpen={!!selectedNote}
-                onClose={() => setSelectedNote(null)}
+                onClose={handleCloseModal}
                 note={selectedNote}
             />
 

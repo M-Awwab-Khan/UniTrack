@@ -130,6 +130,82 @@ export const assignmentsRouter = router({
         });
     }),
 
+    // Get Assignments by Course ID
+    getByCourseId: protectedProcedure
+        .input(z.object({ courseId: z.string().uuid() }))
+        .query(async ({ ctx, input }) => {
+            const userId = ctx.session.user.id;
+
+            const items = await db.query.assignments.findMany({
+                where: (a, { eq }) => eq(a.courseId, input.courseId),
+                with: {
+                    course: true,
+                    author: {
+                        columns: {
+                            name: true,
+                        }
+                    },
+                    submissions: {
+                        where: eq(assignmentSubmissions.studentId, userId),
+                        limit: 1,
+                    },
+                    attachments: true,
+                },
+                orderBy: (assignments, { asc }) => [asc(assignments.dueDate)],
+            });
+
+            return items.map(item => {
+                const submission = item.submissions[0];
+                let submissionStatus = 'Not Submitted';
+                if (submission) {
+                    submissionStatus = submission.isLate ? 'Late Submission' : 'Submitted';
+                }
+
+                const isOverdue = new Date(item.dueDate) < new Date();
+                let status = 'Upcoming';
+
+                if (submission) {
+                    status = 'Completed';
+                } else if (isOverdue) {
+                    status = 'Overdue';
+                } else {
+                    const now = new Date();
+                    const due = new Date(item.dueDate);
+                    if (now.toDateString() === due.toDateString()) {
+                        status = 'Due Today';
+                    }
+                }
+
+                return {
+                    id: item.id,
+                    title: item.title,
+                    courseName: item.course.name,
+                    courseCode: item.course.code,
+                    courseColor: "bg-blue-500",
+                    type: item.type,
+                    dueDate: item.dueDate.toISOString(),
+                    status: status,
+                    description: item.description,
+                    assignedBy: item.author?.name || "Unknown",
+                    submissionStatus: submissionStatus,
+                    submittedAt: submission?.submittedAt.toISOString(),
+                    isLate: submission?.isLate,
+                    attemptNumber: submission?.attemptNumber,
+                    instructions: item.instructions,
+                    courseId: item.courseId,
+                    grade: undefined,
+                    attachments: item.attachments.map(att => ({
+                        id: att.id,
+                        type: att.type,
+                        name: att.name,
+                        url: att.url,
+                        fileSize: att.fileSize,
+                        mimeType: att.mimeType,
+                    })),
+                };
+            });
+        }),
+
     // Submit Assignment (Student)
     submit: protectedProcedure
         .input(z.object({

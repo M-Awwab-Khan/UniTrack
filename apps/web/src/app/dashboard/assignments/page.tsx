@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { AssignmentFilters } from "@/components/assignments/assignment-filters";
 import { AssignmentCard } from "@/components/assignments/assignment-card";
 import { AssignmentDetailsDialog } from "@/components/assignments/assignment-details-dialog";
@@ -12,9 +12,17 @@ import { CreateAssignmentModal } from "@/components/assignments/create-assignmen
 import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
 import { api } from "@/trpc/react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function GlobalAssignmentsPage() {
     const utils = api.useUtils();
+    const router = useRouter();
+    const searchParams = useSearchParams();
+
+    // URL State for Modal
+    const openParam = searchParams.get("open");
+    const idParam = searchParams.get("id");
+
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("All");
     const [courseFilter, setCourseFilter] = useState("all");
@@ -97,14 +105,24 @@ export default function GlobalAssignmentsPage() {
     const grouped = groupedAssignments();
     const showGroups = searchQuery === "" && courseFilter === "all" && statusFilter === "All";
 
-    // Modal State
-    const [selectedAssignment, setSelectedAssignment] = useState<GlobalAssignment | null>(null);
+    // Derived Selection from URL
+    const selectedAssignment = (openParam === "details" && idParam && assignments.length > 0)
+        ? assignments.find(a => a.id === idParam) || null
+        : null;
 
     const handleDelete = (id: string) => {
         if (confirm("Are you sure you want to delete this assignment?")) {
             deleteMutation.mutate({ id });
         }
     }
+
+    const handleAssignmentClick = (assignment: GlobalAssignment) => {
+        router.push(`/dashboard/assignments?open=details&id=${assignment.id}`);
+    };
+
+    const handleCloseModal = () => {
+        router.replace("/dashboard/assignments");
+    };
 
     return (
         <div className="w-full max-w-5xl mx-auto pb-10 space-y-6 relative min-h-screen">
@@ -169,7 +187,7 @@ export default function GlobalAssignmentsPage() {
                                                 <AssignmentCard
                                                     key={assignment.id}
                                                     assignment={assignment}
-                                                    onClick={() => setSelectedAssignment(assignment)}
+                                                    onClick={() => handleAssignmentClick(assignment)}
                                                     canEdit={isTA}
                                                     // Placeholder handlers until Edit Modal exists
                                                     onEdit={() => toast.info("Edit Assignment not implemented in UI yet")}
@@ -186,7 +204,7 @@ export default function GlobalAssignmentsPage() {
                                     <AssignmentCard
                                         key={assignment.id}
                                         assignment={assignment}
-                                        onClick={() => setSelectedAssignment(assignment)}
+                                        onClick={() => handleAssignmentClick(assignment)}
                                         canEdit={isTA}
                                         // Placeholder handlers until Edit Modal exists
                                         onEdit={() => toast.info("Edit Assignment not implemented in UI yet")}
@@ -225,7 +243,7 @@ export default function GlobalAssignmentsPage() {
 
             <AssignmentDetailsDialog
                 isOpen={!!selectedAssignment}
-                onClose={() => setSelectedAssignment(null)}
+                onClose={handleCloseModal}
                 assignment={selectedAssignment}
                 canEdit={isTA}
             />

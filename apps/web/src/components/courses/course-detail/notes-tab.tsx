@@ -7,8 +7,9 @@ import { FileText, Link as LinkIcon, Download, ExternalLink, Video } from "lucid
 import { format } from "date-fns";
 import { api } from "@/trpc/react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { NotePreviewDialog } from "@/components/notes/note-preview-dialog";
+import { useQueryState } from "nuqs";
 
 interface NotesTabProps {
     courseId: string;
@@ -17,11 +18,12 @@ interface NotesTabProps {
 export function NotesTab({ courseId }: NotesTabProps) {
     const { data: resources, isLoading } = api.notes.getByCourseId.useQuery({ courseId });
     const router = useRouter();
-    const searchParams = useSearchParams();
+    const [openParam, setOpenParam] = useQueryState("open");
+    const [idParam, setIdParam] = useQueryState("id");
     const pathname = usePathname();
 
-    const selectedId = searchParams.get('id');
-    const isPreviewOpen = searchParams.get('open') === 'preview';
+    const selectedId = idParam;
+    const isPreviewOpen = openParam === 'preview';
 
     // Note: NotePreviewDialog expects `note` object.
     const selectedResource = resources?.find(r => r.id === selectedId);
@@ -78,17 +80,13 @@ export function NotesTab({ courseId }: NotesTabProps) {
     };
 
     const handleNoteClick = (resource: any) => {
-        const params = new URLSearchParams(searchParams);
-        params.set('open', 'preview');
-        params.set('id', resource.id);
-        router.push(`${pathname}?${params.toString()}` as any);
+        setOpenParam("preview");
+        setIdParam(resource.id);
     };
 
     const handleCloseModal = () => {
-        const params = new URLSearchParams(searchParams);
-        params.delete('open');
-        params.delete('id');
-        router.push(`${pathname}?${params.toString()}` as any);
+        setOpenParam(null);
+        setIdParam(null);
     };
 
     return (

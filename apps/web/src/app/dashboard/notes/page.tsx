@@ -13,16 +13,14 @@ import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
 import { api } from "@/trpc/react";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { useQueryState } from 'nuqs'
 
 export default function NotesPage() {
     const utils = api.useUtils();
     const router = useRouter();
-    const searchParams = useSearchParams();
-
-    // URL State
-    const openParam = searchParams.get("open");
-    const idParam = searchParams.get("id");
+    const [openParam, setOpenParam] = useQueryState("open");
+    const [idParam, setIdParam] = useQueryState("id");
 
     const [searchQuery, setSearchQuery] = useState("");
     const [typeFilter, setTypeFilter] = useState("All");

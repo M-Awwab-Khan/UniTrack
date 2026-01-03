@@ -12,16 +12,15 @@ import { CreateAssignmentModal } from "@/components/assignments/create-assignmen
 import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
 import { api } from "@/trpc/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { useQueryState } from 'nuqs'
 
 export default function GlobalAssignmentsPage() {
     const utils = api.useUtils();
     const router = useRouter();
-    const searchParams = useSearchParams();
+    const [openParam, setOpenParam] = useQueryState("open");
+    const [idParam, setIdParam] = useQueryState("id");
 
-    // URL State for Modal
-    const openParam = searchParams.get("open");
-    const idParam = searchParams.get("id");
 
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("All");

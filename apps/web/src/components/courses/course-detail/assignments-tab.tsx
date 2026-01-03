@@ -15,8 +15,9 @@ import { AssignmentCard } from "@/components/assignments/assignment-card";
 import { api } from "@/trpc/react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { AssignmentDetailsDialog } from "@/components/assignments/assignment-details-dialog";
+import { useQueryState } from "nuqs";
 
 interface AssignmentsTabProps {
     courseId: string;
@@ -27,11 +28,12 @@ export function AssignmentsTab({ courseId }: AssignmentsTabProps) {
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const router = useRouter();
-    const searchParams = useSearchParams();
+    const [openParam, setOpenParam] = useQueryState("open");
+    const [idParam, setIdParam] = useQueryState("id");
     const pathname = usePathname();
 
-    const selectedId = searchParams.get('id');
-    const isDetailsOpen = searchParams.get('open') === 'details';
+    const selectedId = idParam;
+    const isDetailsOpen = openParam === 'details';
 
     // Find selected assignment
     const selectedAssignment = assignments?.find(a => a.id === selectedId);
@@ -56,17 +58,13 @@ export function AssignmentsTab({ courseId }: AssignmentsTabProps) {
     }) || [];
 
     const handleAssignmentClick = (id: string) => {
-        const params = new URLSearchParams(searchParams);
-        params.set('open', 'details');
-        params.set('id', id);
-        router.push(`${pathname}?${params.toString()}` as any);
+        setOpenParam("details");
+        setIdParam(id);
     };
 
     const handleCloseModal = () => {
-        const params = new URLSearchParams(searchParams);
-        params.delete('open');
-        params.delete('id'); // Clean up ID too
-        router.push(`${pathname}?${params.toString()}` as any);
+        setOpenParam(null);
+        setIdParam(null);
     };
 
     return (

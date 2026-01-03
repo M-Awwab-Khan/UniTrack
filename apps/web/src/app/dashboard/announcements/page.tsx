@@ -12,17 +12,15 @@ import { CreateAnnouncementModal } from "@/components/announcements/create-annou
 import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
 import { api } from "@/trpc/react";
+import { useQueryState } from 'nuqs'
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 export default function AnnouncementsPage() {
     const utils = api.useUtils();
     const router = useRouter();
-    const searchParams = useSearchParams();
-
-    // URL State
-    const openParam = searchParams.get("open");
-    const idParam = searchParams.get("id");
+    const [openParam, setOpenParam] = useQueryState("open");
+    const [idParam, setIdParam] = useQueryState("id");
 
     const [searchQuery, setSearchQuery] = useState("");
     const [priorityFilter, setPriorityFilter] = useState("All");

@@ -9,8 +9,9 @@ import { format } from "date-fns";
 import { api } from "@/trpc/react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { AnnouncementDetailDialog } from "@/components/announcements/announcement-detail-dialog";
+import { useQueryState } from "nuqs";
 
 interface AnnouncementsTabProps {
     courseId: string;
@@ -19,12 +20,12 @@ interface AnnouncementsTabProps {
 export function AnnouncementsTab({ courseId }: AnnouncementsTabProps) {
     const { data: announcements, isLoading } = api.announcements.getByCourseId.useQuery({ courseId });
     const [searchQuery, setSearchQuery] = useState("");
-    const router = useRouter();
-    const searchParams = useSearchParams();
-    const pathname = usePathname();
 
-    const selectedId = searchParams.get('id');
-    const isDetailsOpen = searchParams.get('open') === 'details';
+    const [openParam, setOpenParam] = useQueryState("open");
+    const [idParam, setIdParam] = useQueryState("id");
+
+    const selectedId = idParam;
+    const isDetailsOpen = openParam === 'details';
 
     // Find selected announcement
     const selectedAnnouncement = announcements?.find(a => a.id === selectedId);
@@ -44,17 +45,13 @@ export function AnnouncementsTab({ courseId }: AnnouncementsTabProps) {
     ) || [];
 
     const handleAnnouncementClick = (id: string) => {
-        const params = new URLSearchParams(searchParams);
-        params.set('open', 'details');
-        params.set('id', id);
-        router.push(`${pathname}?${params.toString()}` as any);
+        setOpenParam("details");
+        setIdParam(id);
     };
 
     const handleCloseModal = () => {
-        const params = new URLSearchParams(searchParams);
-        params.delete('open');
-        params.delete('id');
-        router.push(`${pathname}?${params.toString()}` as any);
+        setOpenParam(null);
+        setIdParam(null);
     };
 
     return (

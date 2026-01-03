@@ -9,6 +9,7 @@ apps
   │   ├─ Next.js 16
   │   ├─ React 19
   │   ├─ Tailwind CSS v4
+  |   ├─ Bun (runtime and package manager)
   |   ├─ Better Auth
   │   └─ E2E Typesafe API Server & Client (trpc)
       

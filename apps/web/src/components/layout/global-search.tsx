@@ -54,9 +54,13 @@ export function GlobalSearch() {
         return () => document.removeEventListener("keydown", down);
     }, []);
 
-    const handleSelect = (href: string) => {
+    const handleSelect = (item: any) => {
         setOpen(false);
-        router.push(href as any);
+        if (item.modal) {
+            router.push(`${item.route}?open=${item.modal}&id=${item.id}` as any);
+        } else {
+            router.push(item.route);
+        }
     };
 
     return (
@@ -90,7 +94,7 @@ export function GlobalSearch() {
                                 <CommandItem
                                     key={item.id}
                                     value={`assignment-${item.title}`} // Unique value for selection
-                                    onSelect={() => handleSelect(item.href)}
+                                    onSelect={() => handleSelect(item)}
                                 >
                                     <FileText className="mr-2 h-4 w-4" />
                                     <div className="flex flex-col">
@@ -108,7 +112,7 @@ export function GlobalSearch() {
                                 <CommandItem
                                     key={item.id}
                                     value={`announcement-${item.title}`}
-                                    onSelect={() => handleSelect(item.href)}
+                                    onSelect={() => handleSelect(item)}
                                 >
                                     <Bell className="mr-2 h-4 w-4" />
                                     <div className="flex flex-col">
@@ -126,7 +130,7 @@ export function GlobalSearch() {
                                 <CommandItem
                                     key={item.id}
                                     value={`note-${item.title}`}
-                                    onSelect={() => handleSelect(item.href)}
+                                    onSelect={() => handleSelect(item)}
                                 >
                                     <BookOpen className="mr-2 h-4 w-4" />
                                     <div className="flex flex-col">
@@ -144,7 +148,7 @@ export function GlobalSearch() {
                                 <CommandItem
                                     key={item.id}
                                     value={`course-${item.title}`}
-                                    onSelect={() => handleSelect(item.href)}
+                                    onSelect={() => handleSelect(item)}
                                 >
                                     <GraduationCap className="mr-2 h-4 w-4" />
                                     <div className="flex flex-col">
@@ -162,7 +166,7 @@ export function GlobalSearch() {
                                 <CommandItem
                                     key={item.id}
                                     value={`class-${item.title}-${item.id}`}
-                                    onSelect={() => handleSelect(item.href)}
+                                    onSelect={() => handleSelect(item)}
                                 >
                                     <MapPin className="mr-2 h-4 w-4" />
                                     <div className="flex flex-col">

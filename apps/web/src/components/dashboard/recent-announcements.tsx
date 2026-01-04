@@ -5,9 +5,10 @@ import { ChevronRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/trpc/react";
 import { formatDistanceToNow } from "date-fns";
+import { useRouter } from "next/navigation";
 
 export function RecentAnnouncements() {
-    const utils = api.useUtils();
+    const router = useRouter();
     const { data: announcements, isLoading } = api.studentDashboard.getRecentAnnouncements.useQuery();
 
     if (isLoading) {
@@ -49,6 +50,7 @@ export function RecentAnnouncements() {
                 )}
                 {announcements?.map((announcement, index) => (
                     <motion.div
+                        onClick={() => router.push(`/dashboard/announcements?open=details&id=${announcement.id}`)}
                         key={announcement.id}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}

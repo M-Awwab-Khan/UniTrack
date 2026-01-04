@@ -11,16 +11,20 @@ import { Button } from "@/components/ui/button";
 import { CreateAnnouncementModal } from "@/components/announcements/create-announcement-modal";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/trpc/react";
+import { useQueryState } from 'nuqs'
+
+import { useRouter } from "next/navigation";
 
 export default function AnnouncementsPage() {
     const utils = api.useUtils();
-    const queryClient = useQueryClient();
+    const router = useRouter();
+    const [openParam, setOpenParam] = useQueryState("open");
+    const [idParam, setIdParam] = useQueryState("id");
+
     const [searchQuery, setSearchQuery] = useState("");
     const [priorityFilter, setPriorityFilter] = useState("All");
     const [courseFilter, setCourseFilter] = useState("all");
-    const [selectedAnnouncement, setSelectedAnnouncement] = useState<GlobalAnnouncement | null>(null);
     const [createModalOpen, setCreateModalOpen] = useState(false);
 
     // Auth & Permissions
@@ -62,10 +66,23 @@ export default function AnnouncementsPage() {
         return matchesSearch && matchesPriority && matchesCourse;
     }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); // Newest first
 
+    // Derived Selection
+    const selectedAnnouncement = (openParam === "details" && idParam && announcements.length > 0)
+        ? announcements.find(a => a.id === idParam) || null
+        : null;
+
     const handleDelete = (id: string) => {
         if (confirm("Are you sure you want to delete this announcement?")) {
             deleteMutation.mutate({ id });
         }
+    }
+
+    const handleAnnouncementClick = (announcement: GlobalAnnouncement) => {
+        router.push(`/dashboard/announcements?open=details&id=${announcement.id}`);
+    }
+
+    const handleCloseModal = () => {
+        router.replace("/dashboard/announcements");
     }
 
     return (
@@ -111,7 +128,7 @@ export default function AnnouncementsPage() {
                                 <AnnouncementCard
                                     key={announcement.id}
                                     announcement={announcement}
-                                    onClick={() => setSelectedAnnouncement(announcement)}
+                                    onClick={() => handleAnnouncementClick(announcement)}
                                     canEdit={isTA}
                                     onEdit={() => toast.info("Edit not implemented yet")}
                                     onDelete={() => handleDelete(announcement.id)}
@@ -149,7 +166,7 @@ export default function AnnouncementsPage() {
             {/* Detail Dialog */}
             <AnnouncementDetailDialog
                 isOpen={!!selectedAnnouncement}
-                onClose={() => setSelectedAnnouncement(null)}
+                onClose={handleCloseModal}
                 announcement={selectedAnnouncement}
             />
 

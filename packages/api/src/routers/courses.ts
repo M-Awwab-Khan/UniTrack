@@ -45,6 +45,89 @@ export const coursesRouter = router({
             return items;
         }),
 
+    // Get Course By ID (Public/Protected)
+    getById: protectedProcedure
+        .input(z.object({ id: z.string().uuid() }))
+        .query(async ({ input }) => {
+            const course = await db.query.courses.findFirst({
+                where: (c, { eq }) => eq(c.id, input.id),
+                with: {
+                    assignments: true, // Needed for simple checks or we rely on getStats for counts
+                }
+            });
+
+            if (!course) {
+                throw new TRPCError({
+                    code: "NOT_FOUND",
+                    message: "Course not found",
+                });
+            }
+
+            return {
+                id: course.id,
+                name: course.name,
+                code: course.code,
+                description: course.description,
+                credits: course.creditHours,
+                semester: course.semester,
+                department: course.department,
+                instructor: course.instructor || "Unknown Instructor",
+                imageUrl: "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80", // Placeholder
+                color: "bg-blue-500", // Placeholder
+                startDate: course.createdAt.toISOString(), // Placeholder
+                endDate: new Date(course.createdAt.getTime() + 120 * 24 * 60 * 60 * 1000).toISOString(), // Placeholder approx 4 months
+            };
+        }),
+
+    // Get Course Stats
+    getStats: protectedProcedure
+        .input(z.object({ courseId: z.string().uuid() }))
+        .query(async ({ ctx, input }) => {
+            const userId = ctx.session.user.id;
+
+            // 1. Total Assignments
+            const allAssignments = await db.query.assignments.findMany({
+                where: (a, { eq }) => eq(a.courseId, input.courseId),
+            });
+            const totalAssignments = allAssignments.length;
+
+            // 2. Pending Assignments (for user)
+            // Get submissions
+            const mySubmissions = await db.query.assignmentSubmissions.findMany({
+                where: (sub, { eq, and, inArray }) => and(
+                    eq(sub.studentId, userId),
+                    inArray(sub.assignmentId, allAssignments.map(a => a.id))
+                )
+            });
+
+            const submittedIds = new Set(mySubmissions.map(s => s.assignmentId));
+            const pendingAssignments = allAssignments.filter(a => !submittedIds.has(a.id) && new Date(a.dueDate) > new Date()).length;
+
+            // 3. Upcoming Classes (next 7 days)
+            const today = new Date();
+            const nextWeek = new Date();
+            nextWeek.setDate(today.getDate() + 7);
+
+            // Fetch sessions
+            const sessions = await db.query.classSessions.findMany({
+                where: (cs, { eq, and, gte, lte }) => and(
+                    eq(cs.courseId, input.courseId),
+                    gte(cs.date, today),
+                    lte(cs.date, nextWeek)
+                )
+            });
+
+            // Note: If no sessions generated, might be 0. We rely on timetable router for generation.
+            // For stats, we just read what exists.
+
+            return {
+                totalAssignments,
+                pendingAssignments,
+                upcomingClasses: sessions.length,
+                lastUpdated: new Date().toISOString(), // Mock or use course updatedAt
+            };
+        }),
+
     // Validate Code & Get Course Info (Public/Protected)
     getEnrollInfoByCode: protectedProcedure
         .input(z.object({ code: z.string() }))

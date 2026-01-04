@@ -1,35 +1,70 @@
-
 "use client";
 
 import { motion } from "framer-motion";
-import type { CourseDetail } from "@/components/courses/mock-course-details";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
-import { CheckCircle2, Circle, Clock, AlertCircle } from "lucide-react";
+import { Search, Filter, SortAsc } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { AssignmentCard } from "@/components/assignments/assignment-card";
+import { api } from "@/trpc/react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { AssignmentDetailsDialog } from "@/components/assignments/assignment-details-dialog";
+import { useQueryState } from "nuqs";
 
 interface AssignmentsTabProps {
-    data: CourseDetail;
+    courseId: string;
 }
 
-export function AssignmentsTab({ data }: AssignmentsTabProps) {
-    const getStatusIcon = (status: string) => {
-        switch (status) {
-            case 'Submitted': return <CheckCircle2 className="w-4 h-4 text-green-500" />;
-            case 'Graded': return <CheckCircle2 className="w-4 h-4 text-green-500" />;
-            case 'Pending': return <Circle className="w-4 h-4 text-amber-500" />;
-            case 'Missed': return <AlertCircle className="w-4 h-4 text-destructive" />;
-            default: return <Circle className="w-4 h-4 text-muted-foreground" />;
-        }
+export function AssignmentsTab({ courseId }: AssignmentsTabProps) {
+    const { data: assignments, isLoading } = api.assignments.getByCourseId.useQuery({ courseId });
+    const [searchQuery, setSearchQuery] = useState("");
+    const [statusFilter, setStatusFilter] = useState("all");
+    const router = useRouter();
+    const [openParam, setOpenParam] = useQueryState("open");
+    const [idParam, setIdParam] = useQueryState("id");
+    const pathname = usePathname();
+
+    const selectedId = idParam;
+    const isDetailsOpen = openParam === 'details';
+
+    // Find selected assignment
+    const selectedAssignment = assignments?.find(a => a.id === selectedId);
+
+    if (isLoading) {
+        return (
+            <div className="space-y-4">
+                <div className="flex gap-4 mb-6">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-32" />
+                </div>
+                {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-32 w-full" />)}
+            </div>
+        );
+    }
+
+    const filteredAssignments = assignments?.filter(assignment => {
+        const matchesSearch = assignment.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            assignment.description?.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesStatus = statusFilter === "all" || assignment.status === statusFilter;
+        return matchesSearch && matchesStatus;
+    }) || [];
+
+    const handleAssignmentClick = (id: string) => {
+        setOpenParam("details");
+        setIdParam(id);
     };
 
-    const getStatusBadgeVariant = (status: string) => {
-        switch (status) {
-            case 'Submitted': return 'secondary';
-            case 'Graded': return 'outline';
-            case 'Missed': return 'destructive';
-            default: return 'default';
-        }
+    const handleCloseModal = () => {
+        setOpenParam(null);
+        setIdParam(null);
     };
 
     return (
@@ -37,50 +72,61 @@ export function AssignmentsTab({ data }: AssignmentsTabProps) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
+            className="space-y-6"
         >
-            <Card>
-                <CardHeader>
-                    <CardTitle>Assignments</CardTitle>
-                    <CardDescription>Track your submissions and grades.</CardDescription>
-                </CardHeader>
-                <CardContent className="p-0">
-                    <div className="divide-y">
-                        {data.assignments.map((assignment) => (
-                            <div key={assignment.id} className="group flex flex-col sm:flex-row sm:items-center justify-between p-6 hover:bg-muted/30 transition-colors gap-4">
-                                <div className="flex gap-4 items-start">
-                                    <div className="mt-1">{getStatusIcon(assignment.status)}</div>
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <h4 className="font-semibold text-base">{assignment.title}</h4>
-                                            <Badge variant="outline" className="text-[10px] h-5">{assignment.type}</Badge>
-                                        </div>
-                                        <p className="text-sm text-muted-foreground mb-2">{assignment.description}</p>
-                                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                                            <span className="flex items-center gap-1">
-                                                <Clock className="w-3.5 h-3.5" />
-                                                Due {format(new Date(assignment.dueDate), "MMM d, yyyy 'at' h:mm a")}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
+            <div className="flex flex-col md:flex-row gap-4">
+                <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Search assignments..."
+                        className="pl-9 bg-card"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                </div>
+                <div className="flex gap-2">
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <SelectTrigger className="w-[180px] bg-card">
+                            <Filter className="w-4 h-4 mr-2" />
+                            <SelectValue placeholder="Filter by status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Assignments</SelectItem>
+                            <SelectItem value="Upcoming">Upcoming</SelectItem>
+                            <SelectItem value="Due Today">Due Today</SelectItem>
+                            <SelectItem value="Submitted">Submitted</SelectItem>
+                            <SelectItem value="Overdue">Overdue</SelectItem>
+                            <SelectItem value="Completed">Completed</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Button variant="outline" size="icon" className="bg-card">
+                        <SortAsc className="w-4 h-4" />
+                    </Button>
+                </div>
+            </div>
 
-                                <div className="flex items-center gap-3 sm:text-right pl-8 sm:pl-0">
-                                    {assignment.grade ? (
-                                        <div className="flex flex-col items-end">
-                                            <span className="text-sm font-medium text-muted-foreground">Grade</span>
-                                            <span className="font-bold text-lg">{assignment.grade}</span>
-                                        </div>
-                                    ) : (
-                                        <Badge variant={getStatusBadgeVariant(assignment.status) as any} className="capitalize">
-                                            {assignment.status}
-                                        </Badge>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
+            <div className="grid gap-4">
+                {filteredAssignments.length > 0 ? (
+                    filteredAssignments.map((assignment) => (
+                        <AssignmentCard
+                            key={assignment.id}
+                            assignment={assignment as any}
+                            onClick={() => handleAssignmentClick(assignment.id)}
+                        // onSubmit={() => handleAssignmentClick(assignment.id)} // Open details for submit too
+                        />
+                    ))
+                ) : (
+                    <div className="text-center py-12 text-muted-foreground">
+                        {searchQuery ? "No assignments match your search" : "No assignments found for this course"}
                     </div>
-                </CardContent>
-            </Card>
+                )}
+            </div>
+
+            <AssignmentDetailsDialog
+                isOpen={isDetailsOpen}
+                onClose={() => handleCloseModal()}
+                assignment={selectedAssignment as any}
+            />
         </motion.div>
     );
 }

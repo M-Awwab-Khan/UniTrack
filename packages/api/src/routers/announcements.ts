@@ -67,6 +67,50 @@ export const announcementsRouter = router({
         }));
     }),
 
+    // Get Announcements by Course ID
+    getByCourseId: protectedProcedure
+        .input(z.object({ courseId: z.string().uuid() }))
+        .query(async ({ input }) => {
+            const items = await db.query.announcements.findMany({
+                where: (a, { eq }) => eq(a.courseId, input.courseId),
+                with: {
+                    course: true,
+                    author: {
+                        columns: {
+                            name: true,
+                            role: true,
+                        }
+                    },
+                    attachments: true,
+                },
+                orderBy: (announcements, { desc }) => [desc(announcements.createdAt)],
+            });
+
+            return items.map(item => ({
+                id: item.id,
+                title: item.title,
+                content: item.content,
+                courseName: item.course.name,
+                courseCode: item.course.code,
+                courseColor: "bg-blue-500", // placeholder
+                author: item.author?.name || "Unknown",
+                role: "Instructor", // Mock or derive
+                date: item.createdAt.toISOString(),
+                priority: item.priority,
+                isImportant: item.priority === 'Important', // Map priority to isImportant boolean for UI
+                tags: [],
+                attachments: item.attachments.map(att => ({
+                    id: att.id,
+                    type: att.type,
+                    name: att.name,
+                    url: att.url,
+                    fileSize: att.fileSize,
+                    mimeType: att.mimeType,
+                })),
+                courseId: item.courseId,
+            }));
+        }),
+
     // Create Announcement
     create: taProcedure
         .input(

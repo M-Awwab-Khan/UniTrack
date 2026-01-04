@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { api } from "@/trpc/react";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
+import Link from "next/link";
 
 export function CourseOverviewGrid() {
     const { data: courses, isLoading } = api.studentDashboard.getMyCourses.useQuery();
@@ -69,7 +70,9 @@ export function CourseOverviewGrid() {
                                 <span className="font-medium text-foreground">{course.progress}%</span>
                             </div>
                             <Progress value={course.progress} className="h-2" />
-                            <Button className="w-full opacity-0 group-hover:opacity-100 transition-opacity" variant="secondary" size="sm">View Course</Button>
+                            <Link href={`/dashboard/courses/${course.id}`}>
+                                <Button className="cursor-pointer w-full opacity-0 group-hover:opacity-100 transition-opacity" variant="secondary" size="sm">View Course</Button>
+                            </Link>
                         </div>
                     </motion.div>
                 ))}

@@ -12,19 +12,18 @@ import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { authClient } from "@/lib/auth-client";
 import { STUDENT_NAV_ROUTES, ADMIN_NAV_ROUTES } from "@/lib/navigation";
-import { Logo } from "@/components/sidebar/logo";
 import DashboardNavigation from "@/components/sidebar/nav-main";
-import { NotificationsPopover } from "@/components/sidebar/nav-notifications";
-import { TeamSwitcher } from "@/components/sidebar/team-switcher";
 import { GraduationCap } from "lucide-react";
 import React from "react";
+import { usePathname } from "next/navigation";
 
 export function AppSidebar({ className, ...props }: React.ComponentProps<typeof Sidebar>) {
   const { state } = useSidebar();
   const { data: session } = authClient.useSession();
   const isCollapsed = state === "collapsed";
 
-  const userRole = session?.user?.role || "student";
+  const pathname = usePathname();
+  const userRole = pathname.includes("admin") ? "admin" : "student";
   const routes = userRole === "admin" ? ADMIN_NAV_ROUTES : STUDENT_NAV_ROUTES;
 
   return (

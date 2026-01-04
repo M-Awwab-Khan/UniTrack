@@ -2,6 +2,8 @@ import { AppSidebar } from "@/components/sidebar/app-sidebar";
 import { TopNav } from "@/components/dashboard/top-nav";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
+import { NotificationObserver } from "@/components/notifications/notification-observer";
+
 export default function DashboardLayout({
     children,
 }: {
@@ -9,6 +11,7 @@ export default function DashboardLayout({
 }) {
     return (
         <SidebarProvider>
+            <NotificationObserver />
             <AppSidebar />
             <SidebarInset className="flex flex-col w-full overflow-hidden">
                 <TopNav />

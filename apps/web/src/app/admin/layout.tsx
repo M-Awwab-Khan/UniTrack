@@ -4,6 +4,8 @@ import { auth } from "@uni-track/auth"
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
+import { NotificationObserver } from "@/components/notifications/notification-observer";
+
 export default async function AdminLayout({
     children,
 }: {
@@ -19,6 +21,7 @@ export default async function AdminLayout({
     } else {
         return (
             <SidebarProvider>
+                <NotificationObserver />
                 <AppSidebar />
                 <SidebarInset className="bg-muted/20 min-h-screen flex flex-col">
                     <header className="flex h-16 shrink-0 items-center gap-2 px-4 border-b bg-background md:hidden">

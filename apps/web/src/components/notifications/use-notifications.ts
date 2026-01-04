@@ -6,10 +6,10 @@ export function useNotifications() {
 
     const utils = api.useUtils();
 
-    const { data: notifications, isLoading } = api.notifications.getAll.useQuery({ limit: 50 }, { refetchInterval: 60000 });
+    const { data: notifications, isLoading } = api.notifications.getAll.useQuery({ limit: 50 });
 
     // Use the optimized count query for the badge
-    const { data: unreadData } = api.notifications.getUnreadCount.useQuery(void 0, { refetchInterval: 60000 });
+    const { data: unreadData } = api.notifications.getUnreadCount.useQuery();
 
     const markReadMutation = api.notifications.markAsRead.useMutation({
         onSuccess: () => {

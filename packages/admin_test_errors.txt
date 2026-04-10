@@ -1,0 +1,236 @@
+
+[1m[46m RUN [49m[22m [36mv4.1.2 [39m[90m/home/bytecorp/Awwab/uni-track/packages/api[39m
+
+[90mstdout[2m | src/routers/__tests__/admin.test.ts[2m > [22m[2mAdmin Router[2m > [22m[2mFeature: Administrative Controls & Invites[2m > [22m[2mTC-D1: Validate adminProcedure role check -> FORBIDDEN
+[22m[39m[TRPC] getTaInvites took 253ms to execute
+
+[90mstdout[2m | src/routers/__tests__/admin.test.ts[2m > [22m[2mAdmin Router[2m > [22m[2mFeature: Administrative Controls & Invites[2m > [22m[2mTC-D1: Validate adminProcedure role check -> FORBIDDEN
+[22m[39m[TRPC] getTaInvites took 163ms to execute
+
+[90mstdout[2m | src/routers/__tests__/admin.test.ts[2m > [22m[2mAdmin Router[2m > [22m[2mFeature: Administrative Controls & Invites[2m > [22m[2mTC-D2: Check existingUser?.role === "ta" conflict -> CONFLICT
+[22m[39m[TRPC] createTaInvite took 390ms to execute
+
+[90mstdout[2m | src/routers/__tests__/admin.test.ts[2m > [22m[2mAdmin Router[2m > [22m[2mFeature: Administrative Controls & Invites[2m > [22m[2mTC-D3: Evaluate existingInvite active check -> CONFLICT
+[22m[39m[TRPC] createTaInvite took 392ms to execute
+
+[90mstdout[2m | src/routers/__tests__/admin.test.ts[2m > [22m[2mAdmin Router[2m > [22m[2mFeature: Administrative Controls & Invites[2m > [22m[2mTC-D4: Test while loop attempts < 10 limit -> INTERNAL_SERVER_ERROR
+[22m[39m[TRPC] createTaInvite took 209ms to execute
+
+[90mstdout[2m | src/routers/__tests__/admin.test.ts[2m > [22m[2mAdmin Router[2m > [22m[2mFeature: Administrative Controls & Invites[2m > [22m[2mTC-D5: Execute full taInvites insertion path -> Success
+[22m[39m[TRPC] createTaInvite took 313ms to execute
+
+[90mstdout[2m | src/routers/__tests__/admin.test.ts[2m > [22m[2mAdmin Router[2m > [22m[2mFeature: Administrative Controls & Invites[2m > [22m[2mTC-D5b: Execute full taInvites insertion path with zero courses -> Success
+[22m[39m[TRPC] createTaInvite took 333ms to execute
+
+[90mstdout[2m | src/routers/__tests__/admin.test.ts[2m > [22m[2mAdmin Router[2m > [22m[2mFeature: Administrative Controls & Invites[2m > [22m[2mTC-D5c: Evaluate insert returning null fallback -> INTERNAL_SERVER_ERROR
+[22m[39m[TRPC] createTaInvite took 309ms to execute
+
+[90mstdout[2m | src/routers/__tests__/admin.test.ts[2m > [22m[2mAdmin Router[2m > [22m[2mFeature: Administrative Controls & Invites[2m > [22m[2mTC-D6: Evaluate duplicate code check in createCourse -> CONFLICT
+[22m[39m[TRPC] createCourse took 398ms to execute
+
+[90mstdout[2m | src/routers/__tests__/admin.test.ts[2m > [22m[2mAdmin Router[2m > [22m[2mFeature: Administrative Controls & Invites[2m > [22m[2mTC-D6b: Execute db.insert fallback -> INTERNAL_SERVER_ERROR
+[22m[39m[TRPC] createCourse took 359ms to execute
+
+[90mstdout[2m | src/routers/__tests__/admin.test.ts[2m > [22m[2mAdmin Router[2m > [22m[2mFeature: Administrative Controls & Invites[2m > [22m[2mTC-D6c: Execute createCourse -> Success
+[22m[39m[TRPC] createCourse took 274ms to execute
+
+[90mstdout[2m | src/routers/__tests__/admin.test.ts[2m > [22m[2mAdmin Router[2m > [22m[2mFeature: Administrative Controls & Invites[2m > [22m[2mTC-D7: Execute in-memory department filter path -> Filtered User Array
+[22m[39m[TRPC] users.list took 415ms to execute
+
+[90mstdout[2m | src/routers/__tests__/admin.test.ts[2m > [22m[2mAdmin Router[2m > [22m[2mFeature: Administrative Controls & Invites[2m > [22m[2mTC-D7b: Execute list without filters
+[22m[39m[TRPC] users.list took 236ms to execute
+
+[90mstdout[2m | src/routers/__tests__/admin.test.ts[2m > [22m[2mAdmin Router[2m > [22m[2mFeature: Administrative Controls & Invites[2m > [22m[2mTC-D8: Deactivate existing codes in generate -> New Code
+[22m[39m[TRPC] enrollmentCodes.generate took 384ms to execute
+
+[90mstdout[2m | src/routers/__tests__/admin.test.ts[2m > [22m[2mAdmin Router[2m > [22m[2mFeature: Administrative Controls & Invites[2m > [22m[2mTC-D8b: generate fails when course not found -> NOT_FOUND
+[22m[39m[TRPC] enrollmentCodes.generate took 239ms to execute
+
+[90mstdout[2m | src/routers/__tests__/admin.test.ts[2m > [22m[2mAdmin Router[2m > [22m[2mFeature: Administrative Controls & Invites[2m > [22m[2mTC-D9: Check revokeTaInvite path for missing record -> NOT_FOUND
+[22m[39m[TRPC] revokeTaInvite took 185ms to execute
+
+[90mstdout[2m | src/routers/__tests__/admin.test.ts[2m > [22m[2mAdmin Router[2m > [22m[2mFeature: Administrative Controls & Invites[2m > [22m[2mTC-D9b: revokeTaInvite success
+[22m[39m[TRPC] revokeTaInvite took 379ms to execute
+
+[90mstdout[2m | src/routers/__tests__/admin.test.ts[2m > [22m[2mAdmin Router[2m > [22m[2mFeature: Administrative Controls & Invites[2m > [22m[2mExtra: getTaInvites runs mapping properly
+[22m[39m[TRPC] getTaInvites took 277ms to execute
+
+[90mstdout[2m | src/routers/__tests__/admin.test.ts[2m > [22m[2mAdmin Router[2m > [22m[2mFeature: Administrative Controls & Invites[2m > [22m[2mExtra: getCourses runs mapping properly
+[22m[39m[TRPC] getCourses took 174ms to execute
+
+[90mstdout[2m | src/routers/__tests__/admin.test.ts[2m > [22m[2mAdmin Router[2m > [22m[2mFeature: Administrative Controls & Invites[2m > [22m[2mExtra: getAllCourses runs mapping properly
+[22m[39m[TRPC] getAllCourses took 129ms to execute
+
+[90mstdout[2m | src/routers/__tests__/admin.test.ts[2m > [22m[2mAdmin Router[2m > [22m[2mFeature: Administrative Controls & Invites[2m > [22m[2mExtra: createSemester runs successfully
+[22m[39m[TRPC] createSemester took 425ms to execute
+
+[90mstdout[2m | src/routers/__tests__/admin.test.ts[2m > [22m[2mAdmin Router[2m > [22m[2mFeature: Administrative Controls & Invites[2m > [22m[2mExtra: getSemesters runs successfully
+[22m[39m[TRPC] getSemesters took 202ms to execute
+
+[90mstdout[2m | src/routers/__tests__/admin.test.ts[2m > [22m[2mAdmin Router[2m > [22m[2mFeature: Administrative Controls & Invites[2m > [22m[2mExtra: createTimetableTemplate runs successfully
+[22m[39m[TRPC] createTimetableTemplate took 261ms to execute
+
+[90mstdout[2m | src/routers/__tests__/admin.test.ts[2m > [22m[2mAdmin Router[2m > [22m[2mFeature: Administrative Controls & Invites[2m > [22m[2mExtra: getTimetableTemplates runs successfully
+[22m[39m[TRPC] getTimetableTemplates took 490ms to execute
+
+[90mstdout[2m | src/routers/__tests__/admin.test.ts[2m > [22m[2mAdmin Router[2m > [22m[2mFeature: Administrative Controls & Invites[2m > [22m[2mExtra: createAcademicEvent runs successfully
+[22m[39m[TRPC] createAcademicEvent took 438ms to execute
+
+[90mstdout[2m | src/routers/__tests__/admin.test.ts[2m > [22m[2mAdmin Router[2m > [22m[2mFeature: Administrative Controls & Invites[2m > [22m[2mExtra: getAcademicEvents runs successfully
+[22m[39m[TRPC] getAcademicEvents took 485ms to execute
+
+[90mstdout[2m | src/routers/__tests__/admin.test.ts[2m > [22m[2mAdmin Router[2m > [22m[2mFeature: Administrative Controls & Invites[2m > [22m[2mExtra: users.getById behaves correctly
+[22m[39m[TRPC] users.getById took 479ms to execute
+
+[90mstdout[2m | src/routers/__tests__/admin.test.ts[2m > [22m[2mAdmin Router[2m > [22m[2mFeature: Administrative Controls & Invites[2m > [22m[2mExtra: users.getById behaves correctly
+[22m[39m[TRPC] users.getById took 154ms to execute
+
+[90mstdout[2m | src/routers/__tests__/admin.test.ts[2m > [22m[2mAdmin Router[2m > [22m[2mFeature: Administrative Controls & Invites[2m > [22m[2mExtra: users.changeRole behaves correctly
+[22m[39m[TRPC] users.changeRole took 161ms to execute
+
+[90mstdout[2m | src/routers/__tests__/admin.test.ts[2m > [22m[2mAdmin Router[2m > [22m[2mFeature: Administrative Controls & Invites[2m > [22m[2mExtra: enrollmentCodes.list behaves correctly
+[22m[39m[TRPC] enrollmentCodes.list took 463ms to execute
+
+[90mstdout[2m | src/routers/__tests__/admin.test.ts[2m > [22m[2mAdmin Router[2m > [22m[2mFeature: Administrative Controls & Invites[2m > [22m[2mExtra: enrollmentCodes.revoke behaves correctly
+[22m[39m[TRPC] enrollmentCodes.revoke took 266ms to execute
+
+ [31m❯[39m src/routers/__tests__/admin.test.ts [2m([22m[2m29 tests[22m[2m | [22m[31m3 failed[39m[2m)[22m[33m 9726[2mms[22m[39m
+       [33m[2m✓[22m[39m TC-D1: Validate adminProcedure role check -> FORBIDDEN [33m 425[2mms[22m[39m
+       [33m[2m✓[22m[39m TC-D2: Check existingUser?.role === "ta" conflict -> CONFLICT [33m 391[2mms[22m[39m
+       [33m[2m✓[22m[39m TC-D3: Evaluate existingInvite active check -> CONFLICT [33m 393[2mms[22m[39m
+       [32m✓[39m TC-D4: Test while loop attempts < 10 limit -> INTERNAL_SERVER_ERROR[32m 212[2mms[22m[39m
+       [33m[2m✓[22m[39m TC-D5: Execute full taInvites insertion path -> Success [33m 314[2mms[22m[39m
+[31m       [31m×[31m TC-D5b: Execute full taInvites insertion path with zero courses -> Success[39m[33m 356[2mms[22m[39m
+[31m       [31m×[31m TC-D5c: Evaluate insert returning null fallback -> INTERNAL_SERVER_ERROR[39m[33m 314[2mms[22m[39m
+       [33m[2m✓[22m[39m TC-D6: Evaluate duplicate code check in createCourse -> CONFLICT [33m 398[2mms[22m[39m
+       [33m[2m✓[22m[39m TC-D6b: Execute db.insert fallback -> INTERNAL_SERVER_ERROR [33m 361[2mms[22m[39m
+       [32m✓[39m TC-D6c: Execute createCourse -> Success[32m 276[2mms[22m[39m
+       [33m[2m✓[22m[39m TC-D7: Execute in-memory department filter path -> Filtered User Array [33m 416[2mms[22m[39m
+       [32m✓[39m TC-D7b: Execute list without filters[32m 237[2mms[22m[39m
+       [33m[2m✓[22m[39m TC-D8: Deactivate existing codes in generate -> New Code [33m 386[2mms[22m[39m
+       [32m✓[39m TC-D8b: generate fails when course not found -> NOT_FOUND[32m 239[2mms[22m[39m
+       [32m✓[39m TC-D9: Check revokeTaInvite path for missing record -> NOT_FOUND[32m 186[2mms[22m[39m
+       [33m[2m✓[22m[39m TC-D9b: revokeTaInvite success [33m 379[2mms[22m[39m
+       [32m✓[39m Extra: getTaInvites runs mapping properly[32m 279[2mms[22m[39m
+       [32m✓[39m Extra: getCourses runs mapping properly[32m 175[2mms[22m[39m
+       [32m✓[39m Extra: getAllCourses runs mapping properly[32m 131[2mms[22m[39m
+       [33m[2m✓[22m[39m Extra: createSemester runs successfully [33m 428[2mms[22m[39m
+       [32m✓[39m Extra: getSemesters runs successfully[32m 203[2mms[22m[39m
+       [32m✓[39m Extra: createTimetableTemplate runs successfully[32m 263[2mms[22m[39m
+       [33m[2m✓[22m[39m Extra: getTimetableTemplates runs successfully [33m 492[2mms[22m[39m
+       [33m[2m✓[22m[39m Extra: createAcademicEvent runs successfully [33m 440[2mms[22m[39m
+       [33m[2m✓[22m[39m Extra: getAcademicEvents runs successfully [33m 487[2mms[22m[39m
+[31m       [31m×[31m Extra: users.getById behaves correctly[39m[33m 644[2mms[22m[39m
+       [32m✓[39m Extra: users.changeRole behaves correctly[32m 162[2mms[22m[39m
+       [33m[2m✓[22m[39m Extra: enrollmentCodes.list behaves correctly [33m 463[2mms[22m[39m
+       [32m✓[39m Extra: enrollmentCodes.revoke behaves correctly[32m 266[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 3 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m src/routers/__tests__/admin.test.ts[2m > [22mAdmin Router[2m > [22mFeature: Administrative Controls & Invites[2m > [22mTC-D5b: Execute full taInvites insertion path with zero courses -> Success
+[31m[1mTRPCError[22m: [
+  {
+    "origin": "array",
+    "code": "too_small",
+    "minimum": 1,
+    "inclusive": true,
+    "path": [
+      "courseIds"
+    ],
+    "message": "At least one course required"
+  }
+][39m
+[90m [2m❯[22m inputValidatorMiddleware ../../node_modules/.bun/@trpc+server@11.8.1+1fb4c65d43e298b9/node_modules/@trpc/server/src/unstable-core-do-not-import/middleware.ts:[2m191:14[22m[39m
+[90m [2m❯[22m callRecursive ../../node_modules/.bun/@trpc+server@11.8.1+1fb4c65d43e298b9/node_modules/@trpc/server/src/unstable-core-do-not-import/procedureBuilder.ts:[2m633:19[22m[39m
+[90m [2m❯[22m callRecursive ../../node_modules/.bun/@trpc+server@11.8.1+1fb4c65d43e298b9/node_modules/@trpc/server/src/unstable-core-do-not-import/procedureBuilder.ts:[2m633:19[22m[39m
+[90m [2m❯[22m callRecursive ../../node_modules/.bun/@trpc+server@11.8.1+1fb4c65d43e298b9/node_modules/@trpc/server/src/unstable-core-do-not-import/procedureBuilder.ts:[2m633:19[22m[39m
+[36m [2m❯[22m src/trpc.ts:[2m97:20[22m[39m
+    [90m 95|[39m     }
+    [90m 96|[39m
+    [90m 97|[39m     [35mconst[39m result [33m=[39m [35mawait[39m [34mnext[39m()[33m;[39m
+    [90m   |[39m                    [31m^[39m
+    [90m 98|[39m
+    [90m 99|[39m     [35mconst[39m end [33m=[39m [33mDate[39m[33m.[39m[34mnow[39m()[33m;[39m
+[90m [2m❯[22m callRecursive ../../node_modules/.bun/@trpc+server@11.8.1+1fb4c65d43e298b9/node_modules/@trpc/server/src/unstable-core-do-not-import/procedureBuilder.ts:[2m633:19[22m[39m
+[90m [2m❯[22m procedure ../../node_modules/.bun/@trpc+server@11.8.1+1fb4c65d43e298b9/node_modules/@trpc/server/src/unstable-core-do-not-import/procedureBuilder.ts:[2m673:19[22m[39m
+[90m [2m❯[22m ../../node_modules/.bun/@trpc+server@11.8.1+1fb4c65d43e298b9/node_modules/@trpc/server/src/unstable-core-do-not-import/router.ts:[2m474:19[22m[39m
+[90m [2m❯[22m src/routers/__tests__/admin.test.ts:[2m161:25[22m[39m
+
+[31m[1mCaused by: ZodError[22m: [
+  {
+    "origin": "array",
+    "code": "too_small",
+    "minimum": 1,
+    "inclusive": true,
+    "path": [
+      "courseIds"
+    ],
+    "message": "At least one course required"
+  }
+][39m
+[90m [2m❯[22m inputValidatorMiddleware ../../node_modules/.bun/@trpc+server@11.8.1+1fb4c65d43e298b9/node_modules/@trpc/server/dist/initTRPC-T5bbc89W.mjs:[2m42:24[22m[39m
+[90m [2m❯[22m callRecursive ../../node_modules/.bun/@trpc+server@11.8.1+1fb4c65d43e298b9/node_modules/@trpc/server/dist/initTRPC-T5bbc89W.mjs:[2m256:18[22m[39m
+[90m [2m❯[22m callRecursive ../../node_modules/.bun/@trpc+server@11.8.1+1fb4c65d43e298b9/node_modules/@trpc/server/dist/initTRPC-T5bbc89W.mjs:[2m256:18[22m[39m
+[90m [2m❯[22m callRecursive ../../node_modules/.bun/@trpc+server@11.8.1+1fb4c65d43e298b9/node_modules/@trpc/server/dist/initTRPC-T5bbc89W.mjs:[2m256:18[22m[39m
+[36m [2m❯[22m src/trpc.ts:[2m97:20[22m[39m
+[90m [2m❯[22m callRecursive ../../node_modules/.bun/@trpc+server@11.8.1+1fb4c65d43e298b9/node_modules/@trpc/server/dist/initTRPC-T5bbc89W.mjs:[2m256:18[22m[39m
+[90m [2m❯[22m procedure ../../node_modules/.bun/@trpc+server@11.8.1+1fb4c65d43e298b9/node_modules/@trpc/server/dist/initTRPC-T5bbc89W.mjs:[2m281:18[22m[39m
+[90m [2m❯[22m ../../node_modules/.bun/@trpc+server@11.8.1+1fb4c65d43e298b9/node_modules/@trpc/server/dist/tracked-D4V22yc5.mjs:[2m298:13[22m[39m
+[90m [2m❯[22m src/routers/__tests__/admin.test.ts:[2m161:25[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22m[39m
+[31m[1mSerialized Error:[22m[39m [90m{ _zod: { def: [ { origin: 'array', code: 'too_small', minimum: 1, inclusive: true, path: [ 'courseIds' ], message: 'At least one course required' } ], constr: 'Function<ZodError>', traits: { constructor: 'Function<Set>', has: 'Function<has>', add: 'Function<add>', delete: 'Function<delete>', difference: 'Function<difference>', clear: 'Function<clear>', entries: 'Function<entries>', forEach: 'Function<forEach>', intersection: 'Function<intersection>', isSubsetOf: 'Function<isSubsetOf>', isSupersetOf: 'Function<isSupersetOf>', isDisjointFrom: 'Function<isDisjointFrom>', size: 2, symmetricDifference: 'Function<symmetricDifference>', union: 'Function<union>', values: 'Function<values>', keys: 'Function<values>' }, deferred: [] }, issues: [ { origin: 'array', code: 'too_small', minimum: 1, inclusive: true, path: [ 'courseIds' ], message: 'At least one course required' } ], format: 'Function<value>', flatten: 'Function<value>', addIssue: 'Function<value>', addIssues: 'Function<value>', isEmpty: false }[39m
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/routers/__tests__/admin.test.ts[2m > [22mAdmin Router[2m > [22mFeature: Administrative Controls & Invites[2m > [22mTC-D5c: Evaluate insert returning null fallback -> INTERNAL_SERVER_ERROR
+[31m[1mAssertionError[22m: expected [Function] to throw error matching /Failed to create invite/ but got '[\n  {\n    "origin": "array",\n    "…'[39m
+
+[32m- Expected:[39m
+/Failed to create invite/
+
+[31m+ Received:[39m
+"[
+  {
+    \"origin\": \"array\",
+    \"code\": \"too_small\",
+    \"minimum\": 1,
+    \"inclusive\": true,
+    \"path\": [
+      \"courseIds\"
+    ],
+    \"message\": \"At least one course required\"
+  }
+]"
+
+[36m [2m❯[22m src/routers/__tests__/admin.test.ts:[2m182:16[22m[39m
+    [90m180|[39m             [35mawait[39m [34mexpect[39m(adminCaller[33m.[39m[34mcreateTaInvite[39m({
+    [90m181|[39m                 fullName: 'TA 1', email: 'success@test.com', departmen…
+    [90m182|[39m             }))[33m.[39mrejects[33m.[39m[34mtoThrow[39m([36m/Failed to create invite/[39m)[33m;[39m
+    [90m   |[39m                [31m^[39m
+    [90m183|[39m         })[33m;[39m
+    [90m184|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/routers/__tests__/admin.test.ts[2m > [22mAdmin Router[2m > [22mFeature: Administrative Controls & Invites[2m > [22mExtra: users.getById behaves correctly
+[31m[1mTRPCError[22m: User not found[39m
+[36m [2m❯[22m src/routers/admin.ts:[2m470:27[22m[39m
+    [90m468|[39m
+    [90m469|[39m                 [35mif[39m ([33m![39muserItem) {
+    [90m470|[39m                     [35mthrow[39m [35mnew[39m [33mTRPCError[39m({
+    [90m   |[39m                           [31m^[39m
+    [90m471|[39m                         code[33m:[39m [32m"NOT_FOUND"[39m[33m,[39m
+    [90m472|[39m                         message[33m:[39m [32m"User not found"[39m[33m,[39m
+[90m [2m❯[22m resolveMiddleware ../../node_modules/.bun/@trpc+server@11.8.1+1fb4c65d43e298b9/node_modules/@trpc/server/src/unstable-core-do-not-import/procedureBuilder.ts:[2m571:21[22m[39m
+[90m [2m❯[22m callRecursive ../../node_modules/.bun/@trpc+server@11.8.1+1fb4c65d43e298b9/node_modules/@trpc/server/src/unstable-core-do-not-import/procedureBuilder.ts:[2m633:19[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m3 failed[39m[22m[2m | [22m[1m[32m26 passed[39m[22m[90m (29)[39m
+[2m   Start at [22m 22:15:55
+[2m   Duration [22m 10.02s[2m (transform 77ms, setup 0ms, import 184ms, tests 9.73s, environment 0ms)[22m
+
+JSON report written to /home/bytecorp/Awwab/uni-track/packages/api/coverage/test-results.json
+error: "vitest" exited with code 1

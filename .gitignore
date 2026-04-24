@@ -42,6 +42,10 @@ lerna-debug.log*
 # Testing
 coverage
 .nyc_output
+screenshots/
+test-results/
+playwright-report/
+results.json
 
 # Misc
 *.tgz

@@ -241,7 +241,70 @@ export const adminRouter = router({
             return newCourse;
         }),
 
-    // Get All Courses (Paginated)
+    // Update Course
+    updateCourse: adminProcedure
+        .input(
+            z.object({
+                id: z.string().uuid(),
+                code: z.string().min(1, "Course code is required").toUpperCase(),
+                name: z.string().min(1, "Course name is required"),
+                department: z.string().min(1, "Department is required"),
+                instructor: z.string().optional(),
+                semester: z.string().optional(),
+                creditHours: z.number().int().positive().optional(),
+                description: z.string().optional(),
+                status: z.enum(["active", "archived"]).default("active"),
+            })
+        )
+        .mutation(async ({ input }) => {
+            const { id, ...data } = input;
+
+            // Verify course exists
+            const existing = await db.query.courses.findFirst({
+                where: (c, { eq }) => eq(c.id, id),
+            });
+
+            if (!existing) {
+                throw new TRPCError({ code: "NOT_FOUND", message: "Course not found" });
+            }
+
+            // Check for code conflict (exclude self)
+            if (data.code !== existing.code) {
+                const conflict = await db.query.courses.findFirst({
+                    where: (c, { eq }) => eq(c.code, data.code),
+                });
+                if (conflict) {
+                    throw new TRPCError({ code: "CONFLICT", message: "Another course with this code already exists" });
+                }
+            }
+
+            const [updated] = await db
+                .update(courses)
+                .set(data)
+                .where(eq(courses.id, id))
+                .returning();
+
+            return updated;
+        }),
+
+    // Delete Course
+    deleteCourse: adminProcedure
+        .input(z.object({ id: z.string().uuid() }))
+        .mutation(async ({ input }) => {
+            const existing = await db.query.courses.findFirst({
+                where: (c, { eq }) => eq(c.id, input.id),
+            });
+
+            if (!existing) {
+                throw new TRPCError({ code: "NOT_FOUND", message: "Course not found" });
+            }
+
+            await db.delete(courses).where(eq(courses.id, input.id));
+
+            return { success: true };
+        }),
+
+
     getAllCourses: adminProcedure
         .input(
             z.object({

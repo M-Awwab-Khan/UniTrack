@@ -56,12 +56,26 @@ const formSchema = z.object({
 interface CreateAssignmentModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    // We might need to pass available courses if not fetching inside
-    // For now let's fetch inside or reuse a query if available.
-    // Ideally we fetch courses TAs are assigned to.
+    mode?: "create" | "edit";
+    initialData?: {
+        id: string;
+        title: string;
+        description: string;
+        courseId: string;
+        type: (typeof assignmentTypes)[number];
+        dueDate: string;
+        instructions?: string | null;
+    } | null;
+    onSuccess?: () => void;
 }
 
-export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentModalProps) {
+export function CreateAssignmentModal({
+    open,
+    onOpenChange,
+    mode = "create",
+    initialData,
+    onSuccess,
+}: CreateAssignmentModalProps) {
     const utils = api.useUtils();
     const [courses, setCourses] = useState<{ id: string; name: string; code: string }[]>([]);
 
@@ -108,21 +122,83 @@ export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentMo
         },
     });
 
+    useEffect(() => {
+        if (!open) return;
+
+        if (mode === "edit" && initialData) {
+            const dueDate = new Date(initialData.dueDate);
+            const formattedDate = Number.isNaN(dueDate.getTime())
+                ? new Date().toISOString().split("T")[0]
+                : dueDate.toISOString().split("T")[0];
+            const formattedTime = Number.isNaN(dueDate.getTime())
+                ? "23:59"
+                : dueDate.toTimeString().slice(0, 5);
+
+            form.reset({
+                title: initialData.title,
+                description: initialData.description,
+                courseId: initialData.courseId,
+                type: initialData.type,
+                instructions: initialData.instructions ?? "",
+                dueDate: formattedDate,
+                dueTime: formattedTime,
+            });
+            setAttachments([]);
+            return;
+        }
+
+        form.reset({
+            title: "",
+            description: "",
+            type: "Assignment",
+            instructions: "",
+            dueDate: new Date().toISOString().split("T")[0],
+            dueTime: "23:59",
+            courseId: "",
+        });
+        setAttachments([]);
+    }, [open, mode, initialData, form]);
+
     const createMutation = api.assignments.create.useMutation({
         onSuccess: () => {
             toast.success("Assignment created successfully");
             onOpenChange(false);
             form.reset();
             utils.assignments.invalidate();
+            onSuccess?.();
         },
         onError: (err: any) => {
             toast.error(err.message || "Failed to create assignment");
         },
     });
 
+    const updateMutation = api.assignments.update.useMutation({
+        onSuccess: () => {
+            toast.success("Assignment updated successfully");
+            onOpenChange(false);
+            utils.assignments.invalidate();
+            onSuccess?.();
+        },
+        onError: (err: any) => {
+            toast.error(err.message || "Failed to update assignment");
+        },
+    });
+
     const onSubmit = (values: z.infer<typeof formSchema>) => {
         // Combine date and time
         const dateTime = new Date(`${values.dueDate}T${values.dueTime}`);
+
+        if (mode === "edit" && initialData) {
+            updateMutation.mutate({
+                id: initialData.id,
+                title: values.title,
+                description: values.description,
+                type: values.type,
+                dueDate: dateTime.toISOString(),
+                instructions: values.instructions,
+            });
+            return;
+        }
 
         createMutation.mutate({
             title: values.title,
@@ -145,9 +221,11 @@ export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentMo
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>Create Assignment</DialogTitle>
+                    <DialogTitle>{mode === "edit" ? "Edit Assignment" : "Create Assignment"}</DialogTitle>
                     <DialogDescription>
-                        Create a new assignment for your course.
+                        {mode === "edit"
+                            ? "Update assignment details."
+                            : "Create a new assignment for your course."}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -174,7 +252,7 @@ export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentMo
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Course</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <Select onValueChange={field.onChange} value={field.value} disabled={mode === "edit"}>
                                             <FormControl>
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Select Course" />
@@ -199,7 +277,7 @@ export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentMo
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Type</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <Select onValueChange={field.onChange} value={field.value}>
                                             <FormControl>
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Select Type" />
@@ -276,40 +354,44 @@ export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentMo
                             )}
                         />
 
-                        {/* Attachments Section */}
-                        <div className="space-y-3 pt-2">
-                            <div className="flex items-center justify-between">
-                                <Label className="flex items-center gap-2">
-                                    <Paperclip className="w-4 h-4 text-muted-foreground" />
-                                    Attachments
-                                </Label>
-                                {attachments.length < 3 && (
-                                    <Button type="button" variant="outline" size="sm" onClick={() => setIsAddAttachmentOpen(true)} className="h-7 text-xs gap-1">
-                                        <Plus className="w-3.5 h-3.5" /> Add
-                                    </Button>
-                                )}
-                            </div>
+                        {mode === "create" && (
+                            <>
+                                {/* Attachments Section */}
+                                <div className="space-y-3 pt-2">
+                                    <div className="flex items-center justify-between">
+                                        <Label className="flex items-center gap-2">
+                                            <Paperclip className="w-4 h-4 text-muted-foreground" />
+                                            Attachments
+                                        </Label>
+                                        {attachments.length < 3 && (
+                                            <Button type="button" variant="outline" size="sm" onClick={() => setIsAddAttachmentOpen(true)} className="h-7 text-xs gap-1">
+                                                <Plus className="w-3.5 h-3.5" /> Add
+                                            </Button>
+                                        )}
+                                    </div>
 
-                            <AttachmentList
-                                attachments={attachments}
-                                onDelete={handleRemoveAttachment}
-                                canEdit={true}
-                            />
-                        </div>
+                                    <AttachmentList
+                                        attachments={attachments}
+                                        onDelete={handleRemoveAttachment}
+                                        canEdit={true}
+                                    />
+                                </div>
 
-                        <AddAttachmentDialog
-                            open={isAddAttachmentOpen}
-                            onOpenChange={setIsAddAttachmentOpen}
-                            onAdd={handleAddAttachment}
-                        />
+                                <AddAttachmentDialog
+                                    open={isAddAttachmentOpen}
+                                    onOpenChange={setIsAddAttachmentOpen}
+                                    onAdd={handleAddAttachment}
+                                />
+                            </>
+                        )}
 
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                                 Cancel
                             </Button>
-                            <Button type="submit" disabled={createMutation.isPending}>
-                                {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Create Assignment
+                            <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+                                {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                {mode === "edit" ? "Save Changes" : "Create Assignment"}
                             </Button>
                         </DialogFooter>
                     </form>

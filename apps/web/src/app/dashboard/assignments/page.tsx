@@ -29,6 +29,14 @@ export default function GlobalAssignmentsPage() {
     type AssignmentItem = GlobalAssignment & {
         courseId?: string;
         instructions?: string | null;
+        attachments?: {
+            id: string;
+            type: "file" | "link";
+            name: string;
+            url: string;
+            fileSize?: number;
+            mimeType?: string;
+        }[];
     };
 
     const utils = api.useUtils();
@@ -300,6 +308,7 @@ export default function GlobalAssignmentsPage() {
                     type: editingAssignment.type as "Lab" | "Assignment" | "Quiz" | "Project" | "Presentation",
                     dueDate: editingAssignment.dueDate,
                     instructions: editingAssignment.instructions,
+                    attachments: editingAssignment.attachments,
                 } : null}
                 onSuccess={() => {
                     setEditingAssignment(null);

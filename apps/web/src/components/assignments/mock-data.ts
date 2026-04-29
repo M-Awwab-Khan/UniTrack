@@ -13,6 +13,7 @@ export interface GlobalAssignment {
     description: string;
     assignedBy: string;
     submissionStatus: 'Not Submitted' | 'Submitted' | 'Graded';
+    submissionText?: string | null;
     resources?: { name: string; type: 'PDF' | 'Doc' | 'Link'; url: string }[];
     instructions?: string;
 }

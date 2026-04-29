@@ -65,9 +65,22 @@ interface CreateAssignmentModalProps {
         type: (typeof assignmentTypes)[number];
         dueDate: string;
         instructions?: string | null;
+        attachments?: {
+            id: string;
+            type: "file" | "link";
+            name: string;
+            url: string;
+            fileSize?: number;
+            mimeType?: string;
+        }[];
     } | null;
     onSuccess?: () => void;
 }
+
+type PendingAttachment = AttachmentItem & {
+    value: string;
+    mimeType?: string;
+};
 
 export function CreateAssignmentModal({
     open,
@@ -99,15 +112,28 @@ export function CreateAssignmentModal({
         }
     }, [allCourses]);
 
-    const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
+    const [existingAttachments, setExistingAttachments] = useState<AttachmentItem[]>([]);
+    const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
+    const [removedAttachmentIds, setRemovedAttachmentIds] = useState<string[]>([]);
     const [isAddAttachmentOpen, setIsAddAttachmentOpen] = useState(false);
 
-    const handleAddAttachment = (attachment: any) => {
-        setAttachments([...attachments, { ...attachment, id: `pending-${Date.now()}` }]);
+    const handleAddAttachment = (attachment: { type: "file" | "link"; name: string; value: string; fileSize?: number; mimeType?: string }) => {
+        setPendingAttachments((prev) => ([
+            ...prev,
+            { ...attachment, id: `pending-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` },
+        ]));
     };
 
     const handleRemoveAttachment = (attachment: AttachmentItem) => {
-        setAttachments(attachments.filter(a => a.id !== attachment.id));
+        if (attachment.id?.startsWith("pending-")) {
+            setPendingAttachments((prev) => prev.filter((a) => a.id !== attachment.id));
+            return;
+        }
+
+        if (attachment.id) {
+            setRemovedAttachmentIds((prev) => [...new Set([...prev, attachment.id!])]);
+        }
+        setExistingAttachments((prev) => prev.filter((a) => a.id !== attachment.id));
     };
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -143,7 +169,16 @@ export function CreateAssignmentModal({
                 dueDate: formattedDate,
                 dueTime: formattedTime,
             });
-            setAttachments([]);
+            setExistingAttachments((initialData.attachments || []).map((att) => ({
+                id: att.id,
+                type: att.type,
+                name: att.name,
+                url: att.url,
+                fileSize: att.fileSize,
+                publicId: undefined,
+            })));
+            setPendingAttachments([]);
+            setRemovedAttachmentIds([]);
             return;
         }
 
@@ -156,7 +191,9 @@ export function CreateAssignmentModal({
             dueTime: "23:59",
             courseId: "",
         });
-        setAttachments([]);
+        setExistingAttachments([]);
+        setPendingAttachments([]);
+        setRemovedAttachmentIds([]);
     }, [open, mode, initialData, form]);
 
     const createMutation = api.assignments.create.useMutation({
@@ -196,6 +233,14 @@ export function CreateAssignmentModal({
                 type: values.type,
                 dueDate: dateTime.toISOString(),
                 instructions: values.instructions,
+                attachments: pendingAttachments.map((a) => ({
+                    type: a.type,
+                    name: a.name,
+                    value: a.value,
+                    fileSize: a.fileSize,
+                    mimeType: a.mimeType,
+                })),
+                removeAttachmentIds: removedAttachmentIds,
             });
             return;
         }
@@ -207,15 +252,17 @@ export function CreateAssignmentModal({
             type: values.type,
             dueDate: dateTime.toISOString(),
             instructions: values.instructions,
-            attachments: attachments.map(a => ({
+            attachments: pendingAttachments.map(a => ({
                 type: a.type,
                 name: a.name,
-                value: (a as any).value,
+                value: a.value,
                 fileSize: a.fileSize,
-                mimeType: (a as any).mimeType,
+                mimeType: a.mimeType,
             }))
         });
     };
+
+    const materials = [...existingAttachments, ...pendingAttachments];
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -354,36 +401,35 @@ export function CreateAssignmentModal({
                             )}
                         />
 
-                        {mode === "create" && (
-                            <>
-                                {/* Attachments Section */}
-                                <div className="space-y-3 pt-2">
-                                    <div className="flex items-center justify-between">
-                                        <Label className="flex items-center gap-2">
-                                            <Paperclip className="w-4 h-4 text-muted-foreground" />
-                                            Attachments
-                                        </Label>
-                                        {attachments.length < 3 && (
-                                            <Button type="button" variant="outline" size="sm" onClick={() => setIsAddAttachmentOpen(true)} className="h-7 text-xs gap-1">
-                                                <Plus className="w-3.5 h-3.5" /> Add
-                                            </Button>
-                                        )}
-                                    </div>
+                        {/* Assignment Materials Section */}
+                        <div className="space-y-3 pt-2">
+                            <div className="flex items-center justify-between">
+                                <Label className="flex items-center gap-2">
+                                    <Paperclip className="w-4 h-4 text-muted-foreground" />
+                                    Assignment Materials
+                                </Label>
+                                {materials.length < 3 && (
+                                    <Button type="button" variant="outline" size="sm" onClick={() => setIsAddAttachmentOpen(true)} className="h-7 text-xs gap-1">
+                                        <Plus className="w-3.5 h-3.5" /> Add
+                                    </Button>
+                                )}
+                            </div>
 
-                                    <AttachmentList
-                                        attachments={attachments}
-                                        onDelete={handleRemoveAttachment}
-                                        canEdit={true}
-                                    />
-                                </div>
+                            <AttachmentList
+                                attachments={materials}
+                                onDelete={handleRemoveAttachment}
+                                canEdit={true}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                Materials are uploaded only when you press {mode === "edit" ? "Save Changes" : "Create Assignment"}.
+                            </p>
+                        </div>
 
-                                <AddAttachmentDialog
-                                    open={isAddAttachmentOpen}
-                                    onOpenChange={setIsAddAttachmentOpen}
-                                    onAdd={handleAddAttachment}
-                                />
-                            </>
-                        )}
+                        <AddAttachmentDialog
+                            open={isAddAttachmentOpen}
+                            onOpenChange={setIsAddAttachmentOpen}
+                            onAdd={handleAddAttachment}
+                        />
 
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

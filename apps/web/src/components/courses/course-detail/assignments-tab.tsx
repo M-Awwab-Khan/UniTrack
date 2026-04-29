@@ -44,6 +44,14 @@ export function AssignmentsTab({ courseId }: AssignmentsTabProps) {
         type: "Lab" | "Assignment" | "Quiz" | "Project" | "Presentation";
         dueDate: string;
         instructions?: string | null;
+        attachments?: {
+            id: string;
+            type: "file" | "link";
+            name: string;
+            url: string;
+            fileSize?: number;
+            mimeType?: string;
+        }[];
     };
 
     const utils = api.useUtils();

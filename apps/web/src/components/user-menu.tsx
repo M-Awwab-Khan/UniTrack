@@ -13,7 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Skeleton } from "./ui/skeleton";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { User, Settings, LogOut, LayoutDashboard } from "lucide-react";
+import { User, Settings, LogOut, LayoutDashboard, HelpCircle } from "lucide-react";
 
 export function UserProfileDropdown() {
 	const router = useRouter();
@@ -72,6 +72,12 @@ export function UserProfileDropdown() {
 						<Link href="/dashboard/settings" className="cursor-pointer">
 							<Settings className="mr-2 h-4 w-4" />
 							Settings
+						</Link>
+					</DropdownMenuItem>
+					<DropdownMenuItem asChild>
+						<Link href={"/dashboard/help" as any} className="cursor-pointer">
+							<HelpCircle className="mr-2 h-4 w-4" />
+							Help
 						</Link>
 					</DropdownMenuItem>
 				</DropdownMenuGroup>

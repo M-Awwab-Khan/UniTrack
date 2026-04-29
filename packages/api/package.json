@@ -11,8 +11,11 @@
   "type": "module",
   "scripts": {},
   "devDependencies": {
+    "@uni-track/config": "workspace:*",
+    "@vitest/coverage-v8": "^4.1.2",
+    "@vitest/ui": "4.1.2",
     "typescript": "catalog:",
-    "@uni-track/config": "workspace:*"
+    "vitest": "^4.1.2"
   },
   "dependencies": {
     "@trpc/client": "catalog:",

@@ -1,8 +1,6 @@
-
 "use client";
 
-import { motion } from "framer-motion";
-import { Dialog, DialogContent, DialogTitle, DialogHeader, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogHeader, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format, differenceInDays } from "date-fns";
@@ -10,12 +8,8 @@ import {
     Clock,
     Calendar,
     UserCircle,
-    Hash,
     FileText,
-    Download,
-    ExternalLink,
     Info,
-    ChevronRight,
     GraduationCap,
     Send,
     Loader2,
@@ -24,9 +18,11 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/trpc/react";
+import { AddAttachmentDialog } from "./add-attachment-dialog";
+import { AttachmentList, type AttachmentItem } from "./attachment-list";
 
 interface AssignmentData {
     id: string;
@@ -40,11 +36,11 @@ interface AssignmentData {
     description: string;
     assignedBy: string;
     submissionStatus: string;
+    submissionText?: string | null;
     submittedAt?: string;
     isLate?: boolean;
     attemptNumber?: number;
     instructions?: string | null;
-    resources?: any[]; // Keep flexible if we add resources later
     courseId?: string;
     attachments?: {
         id: string;
@@ -55,55 +51,51 @@ interface AssignmentData {
         fileSize?: number;
         mimeType?: string;
     }[];
+    submissionAttachments?: {
+        type: "file" | "link";
+        name: string;
+        url: string;
+        fileSize?: number | null;
+        mimeType?: string | null;
+    }[];
 }
 
 interface AssignmentDetailsDialogProps {
     isOpen: boolean;
     onClose: () => void;
-    assignment: AssignmentData | any; // Support generic input
-    onSuccess?: () => void; // meaningful refetch trigger
-    canEdit?: boolean; // Optional prop to control edit permission (e.g. for TAs)
+    assignment: AssignmentData | any;
+    onSuccess?: () => void;
+    canEdit?: boolean;
 }
 
-import { AddAttachmentDialog } from "./add-attachment-dialog";
-import { AttachmentList, AttachmentItem } from "./attachment-list";
+type PendingSubmissionAttachment = AttachmentItem & {
+    value: string;
+    mimeType?: string;
+};
 
 export function AssignmentDetailsDialog({ isOpen, onClose, assignment, onSuccess, canEdit = false }: AssignmentDetailsDialogProps) {
-    const [submissionText, setSubmissionText] = useState("");
-    const [isAddAttachmentOpen, setIsAddAttachmentOpen] = useState(false);
+    const [submissionText, setSubmissionText] = useState(assignment?.submissionText ?? "");
+    const [isAddSubmissionAttachmentOpen, setIsAddSubmissionAttachmentOpen] = useState(false);
+    const [pendingSubmissionAttachments, setPendingSubmissionAttachments] = useState<PendingSubmissionAttachment[]>([]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        setSubmissionText(assignment?.submissionText ?? "");
+    }, [isOpen, assignment?.id, assignment?.submissionText]);
 
     const utils = api.useUtils();
 
     const submitMutation = api.assignments.submit.useMutation({
         onSuccess: () => {
             toast.success("Assignment submitted successfully!");
+            setPendingSubmissionAttachments([]);
+            setSubmissionText("");
             utils.assignments.getAll.invalidate();
             onSuccess?.();
             onClose();
         },
         onError: (err) => {
             toast.error(err.message || "Failed to submit assignment");
-        }
-    });
-
-    const addAttachmentMutation = api.assignments.addAttachment.useMutation({
-        onSuccess: () => {
-            toast.success("Attachment added successfully");
-            utils.assignments.getAll.invalidate();
-            setIsAddAttachmentOpen(false);
-        },
-        onError: (err) => {
-            toast.error(err.message || "Failed to add attachment");
-        }
-    });
-
-    const removeAttachmentMutation = api.assignments.removeAttachment.useMutation({
-        onSuccess: () => {
-            toast.success("Attachment removed");
-            utils.assignments.getAll.invalidate();
-        },
-        onError: (err) => {
-            toast.error(err.message || "Failed to remove attachment");
         }
     });
 
@@ -116,45 +108,73 @@ export function AssignmentDetailsDialog({ isOpen, onClose, assignment, onSuccess
     let statusColor = "bg-muted text-muted-foreground";
     let statusText = assignment.status;
 
-    if (assignment.submissionStatus === 'Submitted') {
+    if (assignment.submissionStatus === "Submitted") {
         statusColor = "bg-green-100 text-green-700";
         statusText = "Submitted";
-    } else if (assignment.submissionStatus === 'Late Submission') {
+    } else if (assignment.submissionStatus === "Late Submission") {
         statusColor = "bg-orange-100 text-orange-700";
         statusText = "Late Submission";
-    } else if (assignment.status === 'Overdue') {
+    } else if (assignment.status === "Overdue") {
         statusColor = "bg-red-100 text-red-700";
-    } else if (assignment.status === 'Due Today') {
+    } else if (assignment.status === "Due Today") {
         statusColor = "bg-amber-100 text-amber-700";
     } else {
         statusColor = "bg-blue-50 text-blue-700";
         statusText = (daysLeft === 0 ? "Due Today" : `Due in ${daysLeft} days`);
     }
 
-    const isSubmitted = assignment.submissionStatus !== 'Not Submitted';
-    const canSubmit = true; // Always allow (re)submission per req
+    const isSubmitted = assignment.submissionStatus !== "Not Submitted";
+    const canSubmit = true;
+
+    const existingSubmissionAttachments: AttachmentItem[] = useMemo(() => {
+        return (assignment.submissionAttachments || []).map((att: NonNullable<AssignmentData["submissionAttachments"]>[number], idx: number) => ({
+            id: `submitted-${idx}`,
+            type: att.type,
+            name: att.name,
+            url: att.url,
+            fileSize: att.fileSize ?? undefined,
+            isLoading: false,
+        }));
+    }, [assignment.submissionAttachments]);
 
     const handleSubmit = () => {
-        if (!submissionText.trim()) {
-            toast.error("Please enter some text submission.");
+        if (!submissionText.trim() && pendingSubmissionAttachments.length === 0) {
+            toast.error("Please add submission text or at least one submission attachment.");
             return;
         }
+
         submitMutation.mutate({
             assignmentId: assignment.id,
-            submissionText: submissionText
+            submissionText,
+            attachments: pendingSubmissionAttachments.map((attachment) => ({
+                type: attachment.type,
+                name: attachment.name,
+                value: attachment.value,
+                fileSize: attachment.fileSize,
+                mimeType: attachment.mimeType,
+            })),
         });
     };
 
-    const handleAddAttachment = async (attachment: { type: "file" | "link"; name: string; value: string; fileSize?: number; mimeType?: string; }) => {
-        addAttachmentMutation.mutate({
-            assignmentId: assignment.id,
-            type: attachment.type,
-            name: attachment.name,
-            value: attachment.value,
-            fileSize: attachment.fileSize,
-            mimeType: attachment.mimeType,
-        });
+    const handleAddSubmissionAttachment = (attachment: { type: "file" | "link"; name: string; value: string; fileSize?: number; mimeType?: string }) => {
+        setPendingSubmissionAttachments((prev) => ([
+            ...prev,
+            {
+                id: `pending-submission-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                type: attachment.type,
+                name: attachment.name,
+                value: attachment.value,
+                fileSize: attachment.fileSize,
+                mimeType: attachment.mimeType,
+            },
+        ]));
     };
+
+    const handleRemovePendingSubmissionAttachment = (attachment: AttachmentItem) => {
+        setPendingSubmissionAttachments((prev) => prev.filter((item) => item.id !== attachment.id));
+    };
+
+    const assignmentMaterials = assignment.attachments || [];
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -163,7 +183,7 @@ export function AssignmentDetailsDialog({ isOpen, onClose, assignment, onSuccess
                     <div className="flex items-start justify-between gap-4">
                         <div className="space-y-1.5 w-full">
                             <div className="flex items-center gap-2 flex-wrap">
-                                <Badge variant="outline" className={cn("text-[10px] h-5 px-1.5 font-normal", assignment.courseColor?.replace('bg-', 'text-'))}>
+                                <Badge variant="outline" className={cn("text-[10px] h-5 px-1.5 font-normal", assignment.courseColor?.replace("bg-", "text-"))}>
                                     {assignment.courseCode}
                                 </Badge>
                                 <span className="text-sm text-muted-foreground">{assignment.courseName}</span>
@@ -189,7 +209,6 @@ export function AssignmentDetailsDialog({ isOpen, onClose, assignment, onSuccess
                 </DialogHeader>
 
                 <div className="flex-1 overflow-y-auto p-6 space-y-8">
-                    {/* Metadata Grid */}
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6">
                         <div className="space-y-1">
                             <div className="flex items-center gap-1.5 text-muted-foreground text-xs font-medium uppercase tracking-wider">
@@ -217,22 +236,20 @@ export function AssignmentDetailsDialog({ isOpen, onClose, assignment, onSuccess
                         </div>
                     </div>
 
-                    {/* Description */}
                     <div className="space-y-3">
                         <h4 className="text-sm font-semibold flex items-center gap-2">
                             <FileText className="w-4 h-4 text-muted-foreground" />
                             Description
                         </h4>
                         <div className="prose prose-sm prose-gray max-w-none bg-muted/20 p-4 rounded-lg border">
-                            {assignment.description?.split('\n').map((line: string, i: number) => (
-                                <p key={i} className={cn("text-sm leading-relaxed", line.trim().startsWith('*') && "pl-4")}>
+                            {assignment.description?.split("\n").map((line: string, i: number) => (
+                                <p key={i} className={cn("text-sm leading-relaxed", line.trim().startsWith("*") && "pl-4")}>
                                     {line}
                                 </p>
                             ))}
                         </div>
                     </div>
 
-                    {/* Instructions / Policy */}
                     {assignment.instructions && (
                         <div className="flex gap-3 p-3 rounded-lg bg-blue-50/50 border border-blue-100/50 text-blue-900">
                             <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
@@ -243,85 +260,108 @@ export function AssignmentDetailsDialog({ isOpen, onClose, assignment, onSuccess
                         </div>
                     )}
 
-
-                    {/* Submission Section */}
                     <div className="space-y-3 pt-4 border-t">
                         <h4 className="text-sm font-semibold flex items-center gap-2">
-                            <Send className="w-4 h-4 text-muted-foreground" />
-                            Your Submission
+                            <Paperclip className="w-4 h-4 text-muted-foreground" />
+                            Assignment Materials
                         </h4>
-
-                        {isSubmitted && (
-                            <div className="bg-green-50 border border-green-100 rounded-lg p-4 mb-4">
-                                <p className="text-sm text-green-800 font-medium flex items-center gap-2">
-                                    <Clock className="w-4 h-4" />
-                                    Last submitted on {submittedAt ? format(submittedAt, "MMM d, yyyy 'at' h:mm a") : 'Unknown'}
-                                </p>
-                                <p className="text-xs text-green-700 mt-1 pl-6">
-                                    {assignment.isLate ? "Marked as Late Submission" : "Submitted On Time"}
-                                </p>
-                            </div>
-                        )}
-
-                        <div className="space-y-2">
-                            <Textarea
-                                placeholder="Type your submission here... (or paste link)"
-                                className="min-h-[120px] resize-none focus-visible:ring-primary"
-                                value={submissionText}
-                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setSubmissionText(e.target.value)}
-                            />
-                            <p className="text-xs text-muted-foreground">
-                                {isSubmitted ? "Resubmitting will override your previous submission attempt." : "Once submitted, it will be marked based on the deadline."}
-                            </p>
-                        </div>
+                        <AttachmentList attachments={assignmentMaterials} canEdit={false} />
                     </div>
-                    {/* Attachments Section */}
-                    {((assignment.attachments && assignment.attachments.length > 0) || canEdit) && (
-                        <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                                <h4 className="text-sm font-semibold flex items-center gap-2">
-                                    <Paperclip className="w-4 h-4 text-muted-foreground" />
-                                    Attachments
-                                </h4>
-                                {canEdit && (assignment.attachments?.length || 0) < 3 && (
-                                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => setIsAddAttachmentOpen(true)}>
-                                        <Plus className="w-3.5 h-3.5" /> Add
-                                    </Button>
-                                )}
+
+                    {canSubmit && (
+                        <div className="space-y-3 pt-4 border-t">
+                            <h4 className="text-sm font-semibold flex items-center gap-2">
+                                <Send className="w-4 h-4 text-muted-foreground" />
+                                Your Submission
+                            </h4>
+
+                            {isSubmitted && (
+                                <div className="bg-green-50 border border-green-100 rounded-lg p-4 mb-4">
+                                    <p className="text-sm text-green-800 font-medium flex items-center gap-2">
+                                        <Clock className="w-4 h-4" />
+                                        Last submitted on {submittedAt ? format(submittedAt, "MMM d, yyyy 'at' h:mm a") : "Unknown"}
+                                    </p>
+                                    <p className="text-xs text-green-700 mt-1 pl-6">
+                                        {assignment.isLate ? "Marked as Late Submission" : "Submitted On Time"}
+                                    </p>
+                                </div>
+                            )}
+
+                            <div className="space-y-2">
+                                <Textarea
+                                    placeholder="Type your submission here..."
+                                    className="min-h-[120px] resize-none focus-visible:ring-primary"
+                                    value={submissionText}
+                                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setSubmissionText(e.target.value)}
+                                />
                             </div>
 
-                            <AttachmentList
-                                attachments={assignment.attachments || []}
-                                onDelete={(att) => removeAttachmentMutation.mutate({ attachmentId: att.id! })}
-                                canEdit={canEdit}
-                                isDeletingId={removeAttachmentMutation.isPending ? removeAttachmentMutation.variables?.attachmentId : null}
-                            />
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <h5 className="text-sm font-semibold flex items-center gap-2">
+                                        <Paperclip className="w-4 h-4 text-muted-foreground" />
+                                        Submission Attachments
+                                    </h5>
+                                    {(pendingSubmissionAttachments.length < 3) && (
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-7 text-xs gap-1"
+                                            onClick={() => setIsAddSubmissionAttachmentOpen(true)}
+                                        >
+                                            <Plus className="w-3.5 h-3.5" /> Add
+                                        </Button>
+                                    )}
+                                </div>
+
+                                {existingSubmissionAttachments.length > 0 && (
+                                    <div className="space-y-2">
+                                        <p className="text-xs text-muted-foreground">Previously submitted attachments</p>
+                                        <AttachmentList attachments={existingSubmissionAttachments} canEdit={false} />
+                                    </div>
+                                )}
+
+                                <div className="space-y-2">
+                                    <p className="text-xs text-muted-foreground">New attachments for this submission (uploaded on submit)</p>
+                                    <AttachmentList
+                                        attachments={pendingSubmissionAttachments}
+                                        onDelete={handleRemovePendingSubmissionAttachment}
+                                        canEdit={true}
+                                    />
+                                </div>
+                            </div>
 
                             <AddAttachmentDialog
-                                open={isAddAttachmentOpen}
-                                onOpenChange={setIsAddAttachmentOpen}
-                                onAdd={handleAddAttachment}
-                                isSubmitting={addAttachmentMutation.isPending}
+                                open={isAddSubmissionAttachmentOpen}
+                                onOpenChange={setIsAddSubmissionAttachmentOpen}
+                                onAdd={handleAddSubmissionAttachment}
                             />
+
+                            <p className="text-xs text-muted-foreground">
+                                {isSubmitted
+                                    ? "Resubmitting will replace your previous submission text and attachments."
+                                    : "Files and links are uploaded only when you submit."}
+                            </p>
                         </div>
                     )}
                 </div>
 
-
                 <DialogFooter className="p-6 pt-4 border-t bg-muted/10 sm:justify-between items-center gap-4 flex-shrink-0">
                     <Button variant="ghost" className="text-muted-foreground hover:text-foreground" onClick={onClose}>
-                        Cancel
+                        {canSubmit ? "Cancel" : "Close"}
                     </Button>
-                    <div className="flex gap-2 w-full sm:w-auto">
-                        <Button
-                            className="w-full sm:w-auto gap-2"
-                            onClick={handleSubmit}
-                            disabled={submitMutation.isPending}
-                        >
-                            {submitMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-                            {isSubmitted ? "Resubmit Assignment" : "Submit Assignment"}
-                        </Button>
-                    </div>
+                    {canSubmit && (
+                        <div className="flex gap-2 w-full sm:w-auto">
+                            <Button
+                                className="w-full sm:w-auto gap-2"
+                                onClick={handleSubmit}
+                                disabled={submitMutation.isPending}
+                            >
+                                {submitMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                                {isSubmitted ? "Resubmit Assignment" : "Submit Assignment"}
+                            </Button>
+                        </div>
+                    )}
                 </DialogFooter>
             </DialogContent>
         </Dialog>

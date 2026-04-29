@@ -9,7 +9,6 @@ import { Textarea } from "@/components/ui/textarea";
 import {
     Form,
     FormControl,
-    FormDescription,
     FormField,
     FormItem,
     FormLabel,
@@ -25,12 +24,12 @@ import {
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-import { useMutation } from "@tanstack/react-query";
 
 const formSchema = z.object({
     code: z.string().min(1, "Course code is required").toUpperCase(),
     name: z.string().min(1, "Course name is required"),
     department: z.string().min(1, "Department is required"),
+    instructor: z.string().optional().or(z.literal("")),
     semester: z.string().optional().or(z.literal("")),
     creditHours: z.coerce.number().int().positive("Credit hours must be positive").optional(),
     description: z.string().optional().or(z.literal("")),
@@ -39,23 +38,40 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+export interface CourseFormData {
+    id: string;
+    code: string;
+    name: string;
+    department: string;
+    instructor?: string | null;
+    semester?: string | null;
+    creditHours?: number | null;
+    description?: string | null;
+    status: "active" | "archived";
+}
+
 interface CreateCourseFormProps {
     onSuccess?: () => void;
     onCancel?: () => void;
+    /** If provided, the form operates in edit mode */
+    editData?: CourseFormData;
 }
 
-export function CreateCourseForm({ onSuccess, onCancel }: CreateCourseFormProps) {
+export function CreateCourseForm({ onSuccess, onCancel, editData }: CreateCourseFormProps) {
     const utils = api.useUtils();
+    const isEditing = !!editData;
+
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema) as any,
         defaultValues: {
-            code: "",
-            name: "",
-            department: "",
-            semester: "",
-            creditHours: 3,
-            description: "",
-            status: "active",
+            code: editData?.code ?? "",
+            name: editData?.name ?? "",
+            department: editData?.department ?? "",
+            instructor: editData?.instructor ?? "",
+            semester: editData?.semester ?? "",
+            creditHours: editData?.creditHours ?? 3,
+            description: editData?.description ?? "",
+            status: editData?.status ?? "active",
         },
     });
 
@@ -63,18 +79,33 @@ export function CreateCourseForm({ onSuccess, onCancel }: CreateCourseFormProps)
         onSuccess: () => {
             toast.success("Course created successfully");
             form.reset();
-            onSuccess?.();
             utils.admin.getAllCourses.invalidate();
+            onSuccess?.();
         },
         onError: (error: any) => {
-            toast.error("Failed to create course", {
-                description: error.message,
-            });
+            toast.error(error.message ?? "Failed to create course");
         },
     });
 
+    const updateCourse = api.admin.updateCourse.useMutation({
+        onSuccess: () => {
+            toast.success("Course updated successfully");
+            utils.admin.getAllCourses.invalidate();
+            onSuccess?.();
+        },
+        onError: (error: any) => {
+            toast.error(error.message ?? "Failed to update course");
+        },
+    });
+
+    const isPending = createCourse.isPending || updateCourse.isPending;
+
     function onSubmit(values: FormValues) {
-        createCourse.mutate(values as any);
+        if (isEditing) {
+            updateCourse.mutate({ id: editData.id, ...values } as any);
+        } else {
+            createCourse.mutate(values as any);
+        }
     }
 
     return (
@@ -100,7 +131,7 @@ export function CreateCourseForm({ onSuccess, onCancel }: CreateCourseFormProps)
                         render={({ field }: { field: any }) => (
                             <FormItem>
                                 <FormLabel>Department</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <Select onValueChange={field.onChange} value={field.value}>
                                     <FormControl>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select department" />
@@ -133,6 +164,20 @@ export function CreateCourseForm({ onSuccess, onCancel }: CreateCourseFormProps)
                     )}
                 />
 
+                <FormField
+                    control={form.control}
+                    name="instructor"
+                    render={({ field }: { field: any }) => (
+                        <FormItem>
+                            <FormLabel>Instructor (Optional)</FormLabel>
+                            <FormControl>
+                                <Input placeholder="Dr. John Smith" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <FormField
                         control={form.control}
@@ -140,7 +185,7 @@ export function CreateCourseForm({ onSuccess, onCancel }: CreateCourseFormProps)
                         render={({ field }: { field: any }) => (
                             <FormItem>
                                 <FormLabel>Semester (Optional)</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <Select onValueChange={field.onChange} value={field.value}>
                                     <FormControl>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select semester" />
@@ -174,7 +219,7 @@ export function CreateCourseForm({ onSuccess, onCancel }: CreateCourseFormProps)
                         render={({ field }: { field: any }) => (
                             <FormItem>
                                 <FormLabel>Status</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <Select onValueChange={field.onChange} value={field.value}>
                                     <FormControl>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select status" />
@@ -207,13 +252,15 @@ export function CreateCourseForm({ onSuccess, onCancel }: CreateCourseFormProps)
 
                 <div className="flex justify-end gap-3 pt-4">
                     {onCancel && (
-                        <Button type="button" variant="outline" onClick={onCancel} disabled={createCourse.isPending}>
+                        <Button type="button" variant="outline" onClick={onCancel} disabled={isPending}>
                             Cancel
                         </Button>
                     )}
-                    <Button type="submit" disabled={createCourse.isPending} className="flex-1 sm:flex-none min-w-[120px]">
-                        {createCourse.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {createCourse.isPending ? "Creating..." : "Create Course"}
+                    <Button type="submit" disabled={isPending} className="flex-1 sm:flex-none min-w-[120px]">
+                        {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {isPending
+                            ? isEditing ? "Saving..." : "Creating..."
+                            : isEditing ? "Save Changes" : "Create Course"}
                     </Button>
                 </div>
             </form>

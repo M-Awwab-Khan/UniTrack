@@ -14,12 +14,35 @@ import { toast } from "sonner";
 import { api } from "@/trpc/react";
 import { useRouter } from "next/navigation";
 import { useQueryState } from 'nuqs'
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function GlobalAssignmentsPage() {
+    type AssignmentItem = GlobalAssignment & {
+        courseId?: string;
+        instructions?: string | null;
+        attachments?: {
+            id: string;
+            type: "file" | "link";
+            name: string;
+            url: string;
+            fileSize?: number;
+            mimeType?: string;
+        }[];
+    };
+
     const utils = api.useUtils();
     const router = useRouter();
-    const [openParam, setOpenParam] = useQueryState("open");
-    const [idParam, setIdParam] = useQueryState("id");
+    const [openParam] = useQueryState("open");
+    const [idParam] = useQueryState("id");
 
 
     const [searchQuery, setSearchQuery] = useState("");
@@ -27,6 +50,8 @@ export default function GlobalAssignmentsPage() {
     const [courseFilter, setCourseFilter] = useState("all");
     const [viewMode, setViewMode] = useState<"list" | "grid">("list");
     const [createModalOpen, setCreateModalOpen] = useState(false);
+    const [editingAssignment, setEditingAssignment] = useState<AssignmentItem | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<AssignmentItem | null>(null);
 
     // Auth & Permissions
     const { data: session } = authClient.useSession();
@@ -46,7 +71,7 @@ export default function GlobalAssignmentsPage() {
         }
     });
 
-    const assignments: GlobalAssignment[] = assignmentsData ? assignmentsData.map(a => ({
+    const assignments: AssignmentItem[] = assignmentsData ? assignmentsData.map(a => ({
         ...a,
         courseColor: "bg-blue-500", // Fallback color logic could be improved
     } as any)) : []; // Cast to match GlobalAssignment for now which has mock specific fields
@@ -109,11 +134,19 @@ export default function GlobalAssignmentsPage() {
         ? assignments.find(a => a.id === idParam) || null
         : null;
 
-    const handleDelete = (id: string) => {
-        if (confirm("Are you sure you want to delete this assignment?")) {
-            deleteMutation.mutate({ id });
-        }
-    }
+    const handleDeleteConfirm = () => {
+        if (!deleteTarget) return;
+        deleteMutation.mutate({ id: deleteTarget.id }, {
+            onSuccess: () => {
+                setDeleteTarget(null);
+            }
+        });
+    };
+
+    const handleEdit = (assignment: AssignmentItem) => {
+        setEditingAssignment(assignment);
+        setCreateModalOpen(true);
+    };
 
     const handleAssignmentClick = (assignment: GlobalAssignment) => {
         router.push(`/dashboard/assignments?open=details&id=${assignment.id}`);
@@ -188,9 +221,8 @@ export default function GlobalAssignmentsPage() {
                                                     assignment={assignment}
                                                     onClick={() => handleAssignmentClick(assignment)}
                                                     canEdit={isTA}
-                                                    // Placeholder handlers until Edit Modal exists
-                                                    onEdit={() => toast.info("Edit Assignment not implemented in UI yet")}
-                                                    onDelete={() => handleDelete(assignment.id)}
+                                                    onEdit={() => handleEdit(assignment)}
+                                                    onDelete={() => setDeleteTarget(assignment)}
                                                 />
                                             ))}
                                         </div>
@@ -205,9 +237,8 @@ export default function GlobalAssignmentsPage() {
                                         assignment={assignment}
                                         onClick={() => handleAssignmentClick(assignment)}
                                         canEdit={isTA}
-                                        // Placeholder handlers until Edit Modal exists
-                                        onEdit={() => toast.info("Edit Assignment not implemented in UI yet")}
-                                        onDelete={() => handleDelete(assignment.id)}
+                                        onEdit={() => handleEdit(assignment)}
+                                        onDelete={() => setDeleteTarget(assignment)}
                                     />
                                 ))}
                             </div>
@@ -262,8 +293,48 @@ export default function GlobalAssignmentsPage() {
 
             <CreateAssignmentModal
                 open={createModalOpen}
-                onOpenChange={setCreateModalOpen}
+                onOpenChange={(open) => {
+                    setCreateModalOpen(open);
+                    if (!open) {
+                        setEditingAssignment(null);
+                    }
+                }}
+                mode={editingAssignment ? "edit" : "create"}
+                initialData={editingAssignment ? {
+                    id: editingAssignment.id,
+                    title: editingAssignment.title,
+                    description: editingAssignment.description,
+                    courseId: editingAssignment.courseId ?? "",
+                    type: editingAssignment.type as "Lab" | "Assignment" | "Quiz" | "Project" | "Presentation",
+                    dueDate: editingAssignment.dueDate,
+                    instructions: editingAssignment.instructions,
+                    attachments: editingAssignment.attachments,
+                } : null}
+                onSuccess={() => {
+                    setEditingAssignment(null);
+                }}
             />
+
+            <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Assignment?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will permanently delete <span className="font-semibold text-foreground">{deleteTarget?.title}</span>. This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            disabled={deleteMutation.isPending}
+                            onClick={handleDeleteConfirm}
+                            className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+                        >
+                            {deleteMutation.isPending ? "Deleting..." : "Delete Assignment"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

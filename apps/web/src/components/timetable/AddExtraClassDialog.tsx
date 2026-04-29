@@ -71,6 +71,8 @@ export function AddExtraClassDialog({ isOpen, onClose, onSuccess }: AddExtraClas
 
     const onSubmit = (data: z.infer<typeof extraClassSchema>) => {
         addClass.mutate(data);
+        // clear form after submission
+        form.reset();
     };
 
     // We need to fetch courses. Using `courses` router if available

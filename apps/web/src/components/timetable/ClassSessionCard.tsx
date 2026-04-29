@@ -24,6 +24,13 @@ export function ClassSessionCard({ session, userRole, onUpdate, compact = false 
     const [showCancelDialog, setShowCancelDialog] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
 
+    const formatTime = (value?: string) => {
+        if (!value) return "";
+        const [hours = "", minutes = ""] = value.split(":");
+        if (!hours || !minutes) return value;
+        return `${hours}:${minutes}`;
+    };
+
     // If it's an event (Break/Holiday)
     if (session.type === "event") {
         return (
@@ -68,7 +75,7 @@ export function ClassSessionCard({ session, userRole, onUpdate, compact = false 
                 <div className={cn("space-y-1", compact && !isPopover ? "mt-1" : "mt-2")}>
                     <div className="flex items-center text-muted-foreground text-xs">
                         <Clock className={cn("mr-1.5 shrink-0", compact && !isPopover ? "h-3 w-3" : "h-3.5 w-3.5")} />
-                        <span className="truncate">{session.startTime} - {session.endTime}</span>
+                        <span className="truncate">{formatTime(session.startTime)} - {formatTime(session.endTime)}</span>
                     </div>
                     <div className="flex items-center text-muted-foreground text-xs">
                         <MapPin className={cn("mr-1.5 shrink-0", compact && !isPopover ? "h-3 w-3" : "h-3.5 w-3.5")} />

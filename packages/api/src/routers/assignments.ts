@@ -8,6 +8,45 @@ import { storage } from "@uni-track/storage";
 import { eq, and, sql } from "drizzle-orm";
 import { createNotification } from "../lib/notifications";
 
+const attachmentInputSchema = z.object({
+    type: z.enum(attachmentTypeEnum.enumValues),
+    name: z.string().min(1),
+    value: z.string().min(1),
+    fileSize: z.number().optional(),
+    mimeType: z.string().optional(),
+});
+
+type SubmissionAttachment = {
+    type: "file" | "link";
+    name: string;
+    url: string;
+    fileSize?: number | null;
+    mimeType?: string | null;
+};
+
+const parseSubmissionAttachments = (raw: string | null | undefined): SubmissionAttachment[] => {
+    if (!raw) return [];
+
+    try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+            return parsed.filter((item): item is SubmissionAttachment => {
+                return !!item
+                    && (item.type === "file" || item.type === "link")
+                    && typeof item.name === "string"
+                    && typeof item.url === "string";
+            });
+        }
+    } catch {
+        // Backward compatibility for legacy single URL stored in file_url.
+        if (typeof raw === "string" && raw.startsWith("http")) {
+            return [{ type: "file", name: "Uploaded file", url: raw }];
+        }
+    }
+
+    return [];
+};
+
 // Helper to check if TA is assigned to the course
 const isTaAssignedToCourse = async (userId: string, courseId: string) => {
     const assignment = await db.query.courseTas.findFirst({
@@ -114,8 +153,10 @@ export const assignmentsRouter = router({
                 assignedBy: item.author?.name || "Unknown",
                 submissionStatus: submissionStatus,
                 submittedAt: submission?.submittedAt.toISOString(),
+                submissionText: submission?.submissionText,
                 isLate: submission?.isLate,
                 attemptNumber: submission?.attemptNumber,
+                submissionAttachments: parseSubmissionAttachments(submission?.fileUrl),
                 instructions: item.instructions,
                 courseId: item.courseId,
                 attachments: item.attachments.map(att => ({
@@ -189,8 +230,10 @@ export const assignmentsRouter = router({
                     assignedBy: item.author?.name || "Unknown",
                     submissionStatus: submissionStatus,
                     submittedAt: submission?.submittedAt.toISOString(),
+                    submissionText: submission?.submissionText,
                     isLate: submission?.isLate,
                     attemptNumber: submission?.attemptNumber,
+                    submissionAttachments: parseSubmissionAttachments(submission?.fileUrl),
                     instructions: item.instructions,
                     courseId: item.courseId,
                     grade: undefined,
@@ -211,7 +254,7 @@ export const assignmentsRouter = router({
         .input(z.object({
             assignmentId: z.string().uuid(),
             submissionText: z.string().optional(),
-            // fileUrl: z.string().optional(), // Future
+            attachments: z.array(attachmentInputSchema).optional(),
         }))
         .mutation(async ({ ctx, input }) => {
             const { user } = ctx.session;
@@ -250,12 +293,42 @@ export const assignmentsRouter = router({
             const dueDate = new Date(assignment.dueDate);
             const isLate = now > dueDate;
 
+            let submissionAttachments: SubmissionAttachment[] = [];
+
+            if (input.attachments && input.attachments.length > 0) {
+                for (const att of input.attachments) {
+                    let url = att.value;
+
+                    if (att.type === "file") {
+                        try {
+                            const result = await storage.upload(att.value, {
+                                folder: `assignment-submissions/${input.assignmentId}/${user.id}`,
+                                resourceType: "auto",
+                            });
+                            url = result.url;
+                        } catch (error) {
+                            console.error("Submission attachment upload failed", att.name, error);
+                            throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to upload submission attachment" });
+                        }
+                    }
+
+                    submissionAttachments.push({
+                        type: att.type,
+                        name: att.name,
+                        url,
+                        fileSize: att.fileSize,
+                        mimeType: att.mimeType,
+                    });
+                }
+            }
+
             // Upsert submission
             await db.insert(assignmentSubmissions)
                 .values({
                     assignmentId: input.assignmentId,
                     studentId: user.id,
                     submissionText: input.submissionText,
+                    fileUrl: submissionAttachments.length ? JSON.stringify(submissionAttachments) : null,
                     submittedAt: now,
                     isLate: isLate,
                     attemptNumber: 1,
@@ -264,6 +337,7 @@ export const assignmentsRouter = router({
                     target: [assignmentSubmissions.assignmentId, assignmentSubmissions.studentId], // requires unique index definition
                     set: {
                         submissionText: input.submissionText,
+                        fileUrl: submissionAttachments.length ? JSON.stringify(submissionAttachments) : null,
                         submittedAt: now,
                         isLate: isLate,
                         attemptNumber: sql`${assignmentSubmissions.attemptNumber} + 1`,
@@ -284,13 +358,7 @@ export const assignmentsRouter = router({
                 type: z.enum(assignmentTypeEnum.enumValues),
                 dueDate: z.string().datetime(), // Expect ISO string
                 instructions: z.string().optional(),
-                attachments: z.array(z.object({
-                    type: z.enum(attachmentTypeEnum.enumValues),
-                    name: z.string().min(1),
-                    value: z.string().min(1),
-                    fileSize: z.number().optional(),
-                    mimeType: z.string().optional(),
-                })).optional(),
+                attachments: z.array(attachmentInputSchema).optional(),
             })
         )
         .mutation(async ({ ctx, input }) => {
@@ -369,6 +437,8 @@ export const assignmentsRouter = router({
                 type: z.enum(assignmentTypeEnum.enumValues),
                 dueDate: z.string().datetime(),
                 instructions: z.string().optional(),
+                attachments: z.array(attachmentInputSchema).optional(),
+                removeAttachmentIds: z.array(z.string().uuid()).optional(),
             })
         )
         .mutation(async ({ ctx, input }) => {
@@ -399,6 +469,74 @@ export const assignmentsRouter = router({
                     instructions: input.instructions,
                 })
                 .where(eq(assignments.id, input.id));
+
+            if (input.removeAttachmentIds && input.removeAttachmentIds.length > 0) {
+                const removableAttachments = await db.query.attachments.findMany({
+                    where: and(
+                        eq(attachments.assignmentId, input.id),
+                        sql`${attachments.id} = ANY(${input.removeAttachmentIds})`
+                    ),
+                });
+
+                for (const attachment of removableAttachments) {
+                    if (attachment.type === "file" && attachment.publicId) {
+                        try {
+                            await storage.delete(attachment.publicId);
+                        } catch (error) {
+                            console.error("Failed to delete attachment file during update", error);
+                        }
+                    }
+                }
+
+                await db.delete(attachments).where(
+                    and(
+                        eq(attachments.assignmentId, input.id),
+                        sql`${attachments.id} = ANY(${input.removeAttachmentIds})`
+                    )
+                );
+            }
+
+            if (input.attachments && input.attachments.length > 0) {
+                const currentAttachments = await db.query.attachments.findMany({
+                    where: eq(attachments.assignmentId, input.id),
+                });
+
+                if (currentAttachments.length + input.attachments.length > 3) {
+                    throw new TRPCError({
+                        code: "BAD_REQUEST",
+                        message: "Maximum 3 attachments per assignment",
+                    });
+                }
+
+                for (const att of input.attachments) {
+                    let url = att.value;
+                    let publicId: string | null = null;
+
+                    if (att.type === "file") {
+                        try {
+                            const result = await storage.upload(att.value, {
+                                folder: `assignments/${input.id}`,
+                                resourceType: "auto",
+                            });
+                            url = result.url;
+                            publicId = result.publicId;
+                        } catch (error) {
+                            console.error("Upload failed for attachment", att.name, error);
+                            throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to upload attachment" });
+                        }
+                    }
+
+                    await db.insert(attachments).values({
+                        assignmentId: input.id,
+                        type: att.type,
+                        name: att.name,
+                        url,
+                        publicId,
+                        fileSize: att.fileSize,
+                        mimeType: att.mimeType,
+                    });
+                }
+            }
 
             // Notify Update
             // TODO: Notify students

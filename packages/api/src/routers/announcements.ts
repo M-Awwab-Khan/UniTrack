@@ -137,6 +137,14 @@ export const announcementsRouter = router({
                 });
             }
 
+            // DEMO BUG (intentional, for Tangent log testing): keys are lowercase but
+            // priorityEnum values are "Normal" / "Important", so the lookup is undefined.
+            const deliveryRules: Record<string, { notifyStudents: boolean }> = {
+                normal: { notifyStudents: false },
+                important: { notifyStudents: true },
+            };
+            const notifyStudents = deliveryRules[input.priority]!.notifyStudents;
+
             const [announcement] = await db.insert(announcements).values({
                 title: input.title,
                 content: input.content,

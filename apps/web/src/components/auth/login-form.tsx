@@ -22,6 +22,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { loginSchema } from "@/lib/validations/auth";
 import { authClient } from "@/lib/auth-client";
+import { TestCredentialsModal } from "@/components/auth/test-credentials-modal";
 
 export function LoginForm() {
     const router = useRouter();
@@ -68,67 +69,70 @@ export function LoginForm() {
     }
 
     return (
-        <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-            className="w-full"
-        >
-            <div className="mb-8">
-                <h2 className="text-2xl font-bold tracking-tight">Welcome back</h2>
-                <p className="text-muted-foreground mt-2">
-                    Enter your credentials to access your account.
-                </p>
-            </div>
+        <>
+            <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5 }}
+                className="w-full"
+            >
+                <div className="mb-8">
+                    <h2 className="text-2xl font-bold tracking-tight">Welcome back</h2>
+                    <p className="text-muted-foreground mt-2">
+                        Enter your credentials to access your account.
+                    </p>
+                </div>
 
-            <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                    <FormField
-                        control={form.control}
-                        name="email"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Email</FormLabel>
-                                <FormControl>
-                                    <Input placeholder="student@university.edu" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="password"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Password</FormLabel>
-                                <FormControl>
-                                    <Input type="password" placeholder="••••••••" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                        <FormField
+                            control={form.control}
+                            name="email"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Email</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="student@university.edu" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="password"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Password</FormLabel>
+                                    <FormControl>
+                                        <Input type="password" placeholder="••••••••" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
 
-                    <div className="flex items-center justify-between text-sm">
-                        <Link href="#" className="font-medium text-primary hover:underline">
-                            Forgot password?
-                        </Link>
-                    </div>
+                        <div className="flex items-center justify-between text-sm">
+                            <Link href="#" className="font-medium text-primary hover:underline">
+                                Forgot password?
+                            </Link>
+                        </div>
 
-                    <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
-                        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Sign In
-                    </Button>
+                        <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
+                            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Sign In
+                        </Button>
 
-                    <div className="mt-4 text-center text-sm">
-                        <span className="text-muted-foreground">Don&apos;t have an account? </span>
-                        <Link href="/register" className="font-medium text-primary hover:underline">
-                            Register
-                        </Link>
-                    </div>
-                </form>
-            </Form>
-        </motion.div>
+                        <div className="mt-4 text-center text-sm">
+                            <span className="text-muted-foreground">Don&apos;t have an account? </span>
+                            <Link href="/register" className="font-medium text-primary hover:underline">
+                                Register
+                            </Link>
+                        </div>
+                    </form>
+                </Form>
+            </motion.div>
+            <TestCredentialsModal />
+        </>
     );
 }

@@ -1,6 +1,5 @@
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import type { NextRequest } from "next/server";
-import { env } from "@uni-track/config/env";
 import { appRouter } from "@uni-track/api/root";
 import { createTRPCContext } from "@uni-track/api/trpc";
 
@@ -21,14 +20,16 @@ const handler = (req: NextRequest) =>
 		req,
 		router: appRouter,
 		createContext: () => createContext(req),
-		onError:
-			env.NODE_ENV === "development"
-				? ({ path, error }) => {
-					console.error(
-						`❌ tRPC failed on ${path ?? "<no-path>"}: ${error.message}`,
-					);
-				}
-				: undefined,
+		// Always log, so production failures reach Tangent. Client errors
+		// (bad input, unauthorized) are warnings; server faults are errors.
+		onError: ({ path, error }) => {
+			const where = `tRPC ${error.code} on ${path ?? "<no-path>"}`;
+			if (error.code === "INTERNAL_SERVER_ERROR") {
+				console.error(`❌ ${where}:`, error.cause ?? error);
+			} else {
+				console.warn(`⚠️ ${where}: ${error.message}`);
+			}
+		},
 	});
 
 export { handler as GET, handler as POST };

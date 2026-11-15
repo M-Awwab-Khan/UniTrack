@@ -13,6 +13,10 @@
   "dependencies": {
     "@cyntler/react-doc-viewer": "^1.17.1",
     "@hookform/resolvers": "^5.2.2",
+    "@opentelemetry/api-logs": "^0.223.0",
+    "@opentelemetry/exporter-logs-otlp-http": "^0.301.2",
+    "@opentelemetry/resources": "^3.1.1",
+    "@opentelemetry/sdk-logs": "^3.1.1",
     "@radix-ui/react-avatar": "^1.1.11",
     "@radix-ui/react-collapsible": "^1.1.12",
     "@radix-ui/react-dialog": "^1.1.15",
@@ -40,6 +44,7 @@
     "@uni-track/auth": "workspace:*",
     "@uni-track/db": "workspace:*",
     "@uni-track/storage": "workspace:*",
+    "@vercel/functions": "^3.11.3",
     "babel-plugin-react-compiler": "^1.0.0",
     "better-auth": "catalog:",
     "class-variance-authority": "^0.7.1",

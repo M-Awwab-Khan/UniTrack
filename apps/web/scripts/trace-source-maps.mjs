@@ -8,6 +8,7 @@ import { dirname, join } from "node:path";
 const root = join(import.meta.dirname, "..", ".next", "server");
 let added = 0;
 
+/** @param {string} dir */
 function walk(dir) {
 	for (const entry of readdirSync(dir, { withFileTypes: true })) {
 		const path = join(dir, entry.name);
@@ -16,8 +17,10 @@ function walk(dir) {
 	}
 }
 
+/** @param {string} file */
 function patch(file) {
 	const trace = JSON.parse(readFileSync(file, "utf8"));
+	/** @type {Set<string>} */
 	const files = new Set(trace.files);
 	const candidates = [...files, file.replace(/\.nft\.json$/, "").slice(dirname(file).length + 1)];
 	for (const traced of candidates) {

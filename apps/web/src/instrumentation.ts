@@ -8,6 +8,8 @@
 export async function register() {
 	// The OpenTelemetry Node SDK does not run on the Edge runtime.
 	if (process.env.NEXT_RUNTIME !== "nodejs") return;
+	// Resolve stack traces through the shipped .map files (see next.config.ts).
+	await import("./lib/source-maps");
 	const url = process.env.TANGENT_OTLP_LOGS_URL;
 	const token = process.env.TANGENT_INGEST_TOKEN;
 	if (!url || !token) return;

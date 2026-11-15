@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { SourceMap } from "node:module";
+import { dirname, resolve } from "node:path";
 import { format } from "node:util";
 import { type Logger, SeverityNumber } from "@opentelemetry/api-logs";
 import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-http";
@@ -94,6 +97,44 @@ export function startLogExport({ url, token }: { url: string; token: string }) {
 	patchConsole(provider.getLogger("console"));
 }
 
+const sourceMaps = new Map<string, SourceMap | null>();
+
+function sourceMapFor(file: string): SourceMap | null {
+	if (!sourceMaps.has(file)) {
+		let map: SourceMap | null = null;
+		try {
+			map = new SourceMap(JSON.parse(readFileSync(`${file}.map`, "utf8")));
+		} catch {
+			// No map shipped for this chunk: leave its frames as they are.
+		}
+		sourceMaps.set(file, map);
+	}
+	return sourceMaps.get(file) ?? null;
+}
+
+// A bundled frame such as `.next/server/chunks/x._.js:363:49921`, relative or absolute.
+const FRAME = /((?:\/|\.next\/)[^\s()'"]*?\.js):(\d+):(\d+)/g;
+
+/**
+ * Next.js replaces Error.prepareStackTrace with an unmapped formatter, so
+ * Node's own source-map support never applies to error.stack. Map bundled
+ * frames here instead, using the .map files that
+ * scripts/trace-source-maps.mjs ships with each function, so Tangent receives
+ * frames like `/var/task/packages/api/src/routers/announcements.ts:146:66`.
+ */
+export function mapStack(text: string): string {
+	return text.replace(FRAME, (match, path: string, line: string, column: string) => {
+		const file = resolve(process.cwd(), path);
+		const entry = sourceMapFor(file)?.findEntry(Number(line) - 1, Number(column) - 1);
+		if (!entry || !("originalSource" in entry) || !entry.originalSource) return match;
+		const source = decodeURIComponent(entry.originalSource)
+			.replace(/^file:\/\//, "")
+			.replace(/^turbopack:\/\/\/\[project\]\//, "");
+		const original = source.startsWith("/") ? source : resolve(dirname(file), source);
+		return `${original}:${entry.originalLine + 1}:${entry.originalColumn + 1}`;
+	});
+}
+
 /** Mirror server console output into OpenTelemetry, keeping the original output. */
 function patchConsole(logger: Logger) {
 	let emitting = false;
@@ -106,18 +147,19 @@ function patchConsole(logger: Logger) {
 			try {
 				const [severityNumber, severityText] = SEVERITY[method];
 				const error = args.find((arg) => arg instanceof Error);
-				logger.emit({
-					severityNumber,
-					severityText,
-					body: format(...args),
-					attributes: error
-						? {
-								"exception.type": error.name,
-								"exception.message": error.message,
-								"exception.stacktrace": error.stack ?? "",
-							}
-						: undefined,
-				});
+				const body = mapStack(format(...args));
+				const stack = error ? mapStack(error.stack ?? "") : "";
+				const attributes: Record<string, string> = {};
+				if (error) {
+					attributes["exception.type"] = error.name;
+					attributes["exception.message"] = error.message;
+					attributes["exception.stacktrace"] = stack;
+				}
+				// Flags a deploy whose functions were packaged without their .map files.
+				if (/\.next\/server\/[^\s()]*\.js:\d+/.test(body + stack)) {
+					attributes["code.sourcemap"] = "missing";
+				}
+				logger.emit({ severityNumber, severityText, body, attributes });
 			} catch {
 				// Logging must never break the request.
 			} finally {

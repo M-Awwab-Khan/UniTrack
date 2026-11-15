@@ -78,6 +78,7 @@ export function startLogExport({ url, token }: { url: string; token: string }) {
 					process.env.VERCEL_ENV ?? process.env.NODE_ENV,
 				"vcs.ref.head.name": process.env.VERCEL_GIT_COMMIT_REF,
 				"vcs.ref.head.revision": process.env.VERCEL_GIT_COMMIT_SHA,
+				"cloud.provider": process.env.VERCEL ? "vercel" : undefined,
 				"cloud.region": process.env.VERCEL_REGION,
 			}).filter(([, value]) => value),
 		),
